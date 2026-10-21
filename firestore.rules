@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Eine Gruppe ist ein Dokument unter /groups/<CODE>.
+    // Wer den Code kennt, kann mitmachen. Gruppen auflisten ist nicht möglich.
+    match /groups/{code} {
+      allow get: if request.auth != null;
+      allow create: if request.auth != null && code.size() == 8;
+      allow list, update, delete: if false;
+
+      match /{coll}/{id} {
+        allow read, write: if request.auth != null
+          && coll in ['members', 'tasks', 'rewards', 'entries', 'redemptions']
+          && exists(/databases/$(database)/documents/groups/$(code));
+      }
+    }
+  }
+}

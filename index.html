@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Haushaltspunkte</title>
+<meta name="theme-color" content="#6B2F5E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Punkte">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{
+  --bg:#EEF2EE; --surface:#FFFFFF; --ink:#1C2624; --muted:#5D6B67; --line:#D4DDD8;
+  --accent:#6B2F5E; --accent-ink:#FFFFFF; --accent-soft:#F1E4EE;
+  --gold:#B77D06; --gold-soft:#F7EACB; --ok:#2F7D4F; --danger:#A3352B;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --tabh:64px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#121917; --surface:#1B2421; --ink:#E4ECE8; --muted:#93A39D; --line:#2E3A35;
+  --accent:#D99BCB; --accent-ink:#2A1025; --accent-soft:#33222F;
+  --gold:#E9B949; --gold-soft:#3A2E12; --ok:#6CC892; --danger:#F08C80; color-scheme:dark}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-bottom:calc(var(--tabh) + 24px + env(safe-area-inset-bottom,0px))}
+body.noTabs{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px;padding-top:18px}
+.stack{display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:26px;font-weight:800}
+h2{font-size:19px;font-weight:800}
+h3{font-size:17px;font-weight:800}
+p{margin:0}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.me{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:14px;color:#fff;flex:none}
+
+.balances{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.bal{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.bal.mine{border-color:var(--gold)}
+.bal .who{display:flex;align-items:center;gap:8px;font-weight:700;min-width:0}
+.bal .who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bal .num{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;font-variant-numeric:tabular-nums}
+.bal .num small{font-size:14px;font-family:var(--body);font-weight:400;color:var(--muted);margin-left:4px}
+.bal .pend{font-size:13px;color:var(--muted)}
+
+.stamp{flex:none;width:46px;height:46px;border-radius:50%;border:2px dashed var(--gold);background:var(--gold-soft);color:var(--gold);
+  display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:17px;font-variant-numeric:tabular-nums}
+.stamp.cost{border-style:solid}
+
+section{display:flex;flex-direction:column;gap:12px}
+.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.linkbtn{background:none;border:0;padding:4px 0;color:var(--accent);font-weight:700;font-size:14px;text-align:left}
+
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.row .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.row .t{font-weight:700;overflow-wrap:anywhere}
+.row .s{font-size:13px;color:var(--muted)}
+button.row{width:100%;text-align:left}
+button.row:hover{border-color:var(--accent)}
+button.row:active{transform:scale(.99)}
+.row.pending{background:var(--accent-soft);border-style:dashed;flex-wrap:wrap}
+.row .actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.taskline{display:flex;gap:6px;align-items:stretch}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn.big{padding:12px 18px;font-size:16px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.armed{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn.square{border-radius:12px;padding:0 12px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+form.add{display:flex;flex-direction:column;gap:10px}
+.fields{display:flex;gap:8px;flex-wrap:wrap}
+.fields input[type=text]{flex:1 1 180px;min-width:0}
+.fields input[type=number]{flex:0 0 90px;width:90px}
+input[type=text],input[type=number]{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px}
+input.code{font-family:var(--display);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:20px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:5px 10px;font-size:13px;color:var(--muted)}
+.chip:hover{color:var(--ink);border-color:var(--muted)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted);font-size:15px}
+.note{border-radius:12px;padding:12px 14px;background:var(--gold-soft);font-size:14px}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);align-self:flex-start}
+.pill.ok{background:transparent;color:var(--ok);padding-left:0;align-self:center}
+.plus{color:var(--ok);font-weight:800;font-variant-numeric:tabular-nums}
+.minus{color:var(--danger);font-weight:800;font-variant-numeric:tabular-nums}
+.bigcode{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:.14em;user-select:all}
+.linkbox{font-size:13px;color:var(--muted);overflow-wrap:anywhere;user-select:all}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+nav.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--tabh)}
+nav.tabs button{background:none;border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:700;color:var(--muted);position:relative}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button[aria-current="page"]{color:var(--accent)}
+.badge{position:absolute;top:8px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:var(--danger);color:#fff;font-size:11px;display:grid;place-items:center;padding:0 5px}
+
+.overlay{position:fixed;inset:0;z-index:20;background:rgba(10,15,14,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:20px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.sheet .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + 14px + env(safe-area-inset-bottom,0px));z-index:15;
+  background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;display:flex;gap:14px;align-items:center;font-size:14px;max-width:calc(100% - 32px)}
+.toast button{background:none;border:0;color:var(--gold);font-weight:700}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{transform:translate(-50%,8px);opacity:0}}}
+</style>
+</head>
+<body class="noTabs">
+<div class="wrap">
+  <div class="top">
+    <h1>Haushaltspunkte</h1>
+    <div class="me" id="meChip"></div>
+  </div>
+  <div id="status" class="note" hidden></div>
+
+  <!-- START: Gruppe gründen oder beitreten -->
+  <div id="screenStart" class="stack" hidden>
+    <p class="muted">Sammelt Punkte für Hausarbeit und tauscht sie gegen Belohnungen. Eine Person gründet die Gruppe, die anderen treten mit dem Code bei.</p>
+    <form class="card" id="joinCodeForm">
+      <h3>Gruppe beitreten</h3>
+      <input type="text" class="code" id="joinCode" placeholder="CODE" maxlength="9" autocomplete="off" autocapitalize="characters" required>
+      <div><button class="btn primary" type="submit">Beitreten</button></div>
+    </form>
+    <form class="card" id="createForm">
+      <h3>Neue Gruppe gründen</h3>
+      <input type="text" id="createName" placeholder="Dein Name" maxlength="24" required>
+      <div><button class="btn" type="submit">Gruppe gründen</button></div>
+    </form>
+  </div>
+
+  <!-- WER BIST DU -->
+  <div id="screenWho" class="stack" hidden>
+    <section>
+      <h2>Wer bist du?</h2>
+      <p class="muted small">Schon mal mitgemacht, zum Beispiel auf einem anderen Handy? Dann tippe auf deinen Namen.</p>
+      <div class="list" id="whoList"></div>
+    </section>
+    <form class="card" id="whoNewForm">
+      <h3>Ich bin neu hier</h3>
+      <input type="text" id="whoName" placeholder="Dein Name" maxlength="24" required>
+      <div><button class="btn primary" type="submit">Mitmachen</button></div>
+    </form>
+    <button class="linkbtn" data-act="leave">Andere Gruppe wählen</button>
+  </div>
+
+  <!-- APP -->
+  <div id="screenApp" class="stack" hidden>
+    <div class="balances" id="balances"></div>
+
+    <div data-view="collect" class="view stack">
+      <section>
+        <div class="sechead"><h2>Erledigt? Antippen.</h2><span class="label">Aufgaben</span></div>
+        <div class="list" id="taskList"></div>
+        <div id="taskPendingNote"></div>
+      </section>
+      <section class="card">
+        <h3>Etwas anderes erledigt</h3>
+        <p class="muted small">Freitext-Aufgabe mit Punktevorschlag. Die anderen bestätigen die Punkte, dann zählen sie.</p>
+        <form class="add" id="freeForm">
+          <div class="fields">
+            <input type="text" id="freeTitle" placeholder="z. B. Fahrrad repariert" maxlength="80" required>
+            <input type="number" id="freePoints" placeholder="Punkte" min="1" max="999" inputmode="numeric" required>
+          </div>
+          <div><button class="btn primary" type="submit">Eintragen</button></div>
+        </form>
+      </section>
+      <section class="card">
+        <h3>Neue Standard-Aufgabe</h3>
+        <div class="chips" data-fill="task">
+          <button type="button" class="chip" data-t="Staubsaugen" data-p="10">Staubsaugen · 10</button>
+          <button type="button" class="chip" data-t="Kochen" data-p="15">Kochen · 15</button>
+          <button type="button" class="chip" data-t="Spülmaschine ausräumen" data-p="5">Spülmaschine ausräumen · 5</button>
+          <button type="button" class="chip" data-t="Bad putzen" data-p="20">Bad putzen · 20</button>
+          <button type="button" class="chip" data-t="Einkaufen" data-p="10">Einkaufen · 10</button>
+        </div>
+        <form class="add" id="taskForm">
+          <div class="fields">
+            <input type="text" id="taskTitle" placeholder="Aufgabe" maxlength="60" required>
+            <input type="number" id="taskPoints" placeholder="Punkte" min="1" max="999" inputmode="numeric" required>
+          </div>
+          <div><button class="btn primary" type="submit">Vorschlagen</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div data-view="redeem" class="view stack" hidden>
+      <section>
+        <div class="sechead"><h2>Punkte einlösen</h2><span class="label">Belohnungen</span></div>
+        <div class="list" id="rewardList"></div>
+        <div id="rewardPendingNote"></div>
+      </section>
+      <section>
+        <div class="sechead"><h2>Offen</h2><span class="label">Noch einzulösen</span></div>
+        <div class="list" id="openRedemptions"></div>
+      </section>
+      <section class="card">
+        <h3>Neue Belohnung</h3>
+        <div class="chips" data-fill="reward">
+          <button type="button" class="chip" data-t="Kakao gemacht bekommen" data-p="15">Kakao · 15</button>
+          <button type="button" class="chip" data-t="Date Night" data-p="100">Date Night · 100</button>
+          <button type="button" class="chip" data-t="Frühstück ans Bett" data-p="40">Frühstück ans Bett · 40</button>
+          <button type="button" class="chip" data-t="Massage" data-p="30">Massage · 30</button>
+          <button type="button" class="chip" data-t="Filmauswahl für den Abend" data-p="10">Filmauswahl · 10</button>
+        </div>
+        <form class="add" id="rewardForm">
+          <div class="fields">
+            <input type="text" id="rewardTitle" placeholder="Belohnung" maxlength="60" required>
+            <input type="number" id="rewardPoints" placeholder="Kosten" min="1" max="9999" inputmode="numeric" required>
+          </div>
+          <div><button class="btn primary" type="submit">Vorschlagen</button></div>
+        </form>
+      </section>
+    </div>
+
+    <div data-view="approve" class="view stack" hidden>
+      <section>
+        <div class="sechead"><h2>Punkte bestätigen</h2><span class="label">Einmalig von allen</span></div>
+        <p class="muted small">Jede neue Aufgabe, Belohnung und Freitext-Aufgabe zählt erst, wenn alle in der Gruppe die Punktzahl bestätigt haben. Wer einen anderen Wert vorschlägt, startet die Abstimmung neu.</p>
+        <div class="list" id="approveList"></div>
+      </section>
+    </div>
+
+    <div data-view="history" class="view stack" hidden>
+      <section>
+        <div class="sechead"><h2>Verlauf</h2><span class="label">Neueste zuerst</span></div>
+        <div class="list" id="history"></div>
+      </section>
+      <section class="card">
+        <h3>Jemanden einladen</h3>
+        <p class="muted small">Schick diesen Link oder den Code. Ein Konto braucht niemand.</p>
+        <div class="bigcode" id="groupCode"></div>
+        <div class="linkbox" id="inviteLink"></div>
+        <div><button class="btn primary" data-act="copyInvite">Link kopieren</button></div>
+      </section>
+      <section>
+        <div class="sechead"><h2>Gruppe</h2><span class="label">Mitglieder</span></div>
+        <div class="list" id="members"></div>
+        <div><button class="btn ghost danger" data-act="leave" data-confirm="Wirklich abmelden?">Auf diesem Handy abmelden</button></div>
+        <p class="muted small">Abmelden löscht nichts. Du kannst später mit dem Code wieder beitreten und dich als dieselbe Person auswählen.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs" id="tabs" aria-label="Bereiche" hidden><div class="in">
+  <button data-tab="collect" aria-current="page"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Sammeln</button>
+  <button data-tab="redeem"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1s6 1 6 1c0 0 6 2 6-1s-4-3-6 1"/></svg>Einlösen</button>
+  <button data-tab="approve"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Bestätigen<span class="badge" id="badge" hidden>0</span></button>
+  <button data-tab="history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>Verlauf</button>
+</div></nav>
+
+<div class="overlay" id="renameOverlay" hidden>
+  <form class="sheet" id="renameForm">
+    <h2>Name ändern</h2>
+    <input type="text" id="renameName" maxlength="24" required>
+    <div class="btns"><button class="btn ghost" type="button" data-act="renameCancel">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div>
+  </form>
+</div>
+
+<div class="overlay" id="editOverlay" hidden>
+  <form class="sheet" id="editForm">
+    <h2 id="editHead">Bearbeiten</h2>
+    <p class="muted small" id="editHint"></p>
+    <div class="fields">
+      <input type="text" id="editTitle" maxlength="80" required>
+      <input type="number" id="editPoints" min="1" max="9999" inputmode="numeric" required>
+    </div>
+    <div class="btns">
+      <button class="btn danger ghost" type="button" id="editDelete" data-act="editDelete" data-confirm="Wirklich löschen?">Löschen</button>
+      <span style="flex:1"></span>
+      <button class="btn ghost" type="button" data-act="editCancel">Abbrechen</button>
+      <button class="btn primary" type="submit">Speichern</button>
+    </div>
+  </form>
+</div>
+
+<div id="toastHost"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache,
+  doc, collection, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { firebaseConfig } from "./config.js";
+
+const COLLS = ["members","tasks","rewards","entries","redemptions"];
+const S = { group:null, me:null, tab:"collect", ready:{}, members:[], tasks:[], rewards:[], entries:[], redemptions:[] };
+let fs = null, unsubs = [], edit = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = {
+  get(k){ try{ return localStorage.getItem(k) }catch(e){ return store.mem[k] ?? null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch(e){ store.mem[k]=v } },
+  del(k){ try{ localStorage.removeItem(k) }catch(e){ delete store.mem[k] } },
+  mem:{}
+};
+const ALPH = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function rnd(n, alph = ALPH){ const a = crypto.getRandomValues(new Uint32Array(n)); return [...a].map(x => alph[x % alph.length]).join("") }
+const fmtCode = c => c ? c.slice(0,4) + "-" + c.slice(4) : "";
+const normCode = s => String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+const gref = (...p) => doc(fs, "groups", S.group, ...p);
+const gcol = c => collection(fs, "groups", S.group, c);
+
+const COLORS = ["#6B2F5E","#1F6F78","#B4541E","#3E5BA9","#4F7A28","#8A3B3B"];
+function colorFor(id){ let h=0; for (const c of String(id)) h=(h*31+c.charCodeAt(0))>>>0; return COLORS[h%COLORS.length] }
+function nameOf(id){ const m=S.members.find(m=>m.id===id); return m ? m.name : "Jemand" }
+function av(id){ const n=nameOf(id); return `<span class="av" style="background:${colorFor(id)}">${esc((n[0]||"?").toUpperCase())}</span>` }
+function when(t){ if(!t) return ""; const d=new Date(t), now=new Date(); const y=new Date(now); y.setDate(now.getDate()-1);
+  const time=d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  if (d.toDateString()===now.toDateString()) return "heute "+time;
+  if (d.toDateString()===y.toDateString()) return "gestern "+time;
+  return d.toLocaleDateString("de-DE",{day:"numeric",month:"short"})+" "+time }
+const pts = n => `${n} ${n===1?"Punkt":"Punkte"}`;
+
+/* ---------- Punkte-Logik ---------- */
+function isActive(it){ if (it.status==="active") return true;
+  return S.members.length>=2 && S.members.every(m => it.approvals && it.approvals[m.id]) }
+function needsMe(it){ return !!S.me && !isActive(it) && !(it.approvals||{})[S.me] }
+function missing(it){ return S.members.filter(m => !(it.approvals||{})[m.id]).map(m => m.name) }
+function balance(uid){ let b=0,p=0;
+  for (const e of S.entries){ if (e.uid!==uid) continue; if (e.kind==="free" && !isActive(e)) p+=e.points||0; else b+=e.points||0 }
+  for (const r of S.redemptions){ if (r.uid===uid) b-=r.cost||0 }
+  return {b,p} }
+
+/* ---------- Hilfen ---------- */
+function toast(msg, undo){ const h=$("toastHost"); h.innerHTML=""; const t=document.createElement("div"); t.className="toast";
+  const s=document.createElement("span"); s.textContent=msg; t.appendChild(s);
+  if (undo){ const b=document.createElement("button"); b.textContent="Rückgängig"; b.onclick=()=>{ h.innerHTML=""; undo() }; t.appendChild(b) }
+  h.appendChild(t); clearTimeout(toast._t); toast._t=setTimeout(()=>{ if(t.parentNode) h.innerHTML="" },5000) }
+function showStatus(msg){ const s=$("status"); s.textContent=msg||""; s.hidden=!msg }
+// Schreibt im Hintergrund: offline landen Änderungen in der Warteschlange und werden später übertragen.
+function w(promise){ promise.catch(e => {
+  console.error(e);
+  if (e && e.code==="permission-denied") toast("Keine Berechtigung. Prüfe die Firestore-Regeln (siehe Anleitung).");
+  else if (e && e.code==="resource-exhausted") toast("Das kostenlose Tageslimit ist erreicht. Morgen geht es weiter.");
+  else toast("Das hat nicht geklappt. Bitte nochmal versuchen.");
+}); return true }
+
+/* ---------- Bildschirme ---------- */
+function show(screen){
+  for (const id of ["screenStart","screenWho","screenApp"]) $(id).hidden = id!==screen;
+  $("tabs").hidden = screen!=="screenApp";
+  document.body.classList.toggle("noTabs", screen!=="screenApp");
+}
+function route(){
+  if (!S.group){ show("screenStart"); $("meChip").innerHTML=""; return }
+  if (!S.ready.members) return;
+  const meM = S.members.find(m=>m.id===S.me);
+  if (!meM){ show("screenWho"); renderWho(); $("meChip").innerHTML=""; return }
+  show("screenApp"); render();
+}
+
+function renderWho(){
+  $("whoList").innerHTML = S.members.length
+    ? [...S.members].sort((a,b)=>(a.joinedAt||0)-(b.joinedAt||0)).map(m=>`<button class="row" data-act="iam" data-id="${m.id}">${av(m.id)}<span class="main"><span class="t">Ich bin ${esc(m.name)}</span></span></button>`).join("")
+    : `<div class="empty">Noch niemand in dieser Gruppe.</div>`;
+}
+
+function render(){
+  const meM = S.members.find(m=>m.id===S.me);
+  $("meChip").innerHTML = meM ? `${av(S.me)}<span>${esc(meM.name)}</span>` : "";
+  // Punktestand
+  if (S.ready.entries && S.ready.redemptions){
+    $("balances").innerHTML = [...S.members].sort((a,b)=>a.id===S.me?-1:b.id===S.me?1:(a.joinedAt||0)-(b.joinedAt||0)).map(m=>{ const {b,p}=balance(m.id);
+      return `<div class="bal ${m.id===S.me?"mine":""}"><div class="who">${av(m.id)}<span>${esc(m.name)}</span></div>
+      <div class="num">${b}<small>${b===1?"Punkt":"Punkte"}</small></div>${p?`<div class="pend">+${p} warten auf Bestätigung</div>`:""}</div>` }).join("");
+  } else $("balances").innerHTML = `<div class="bal"><div class="label">Punktestand</div><div class="muted small">Wird geladen …</div></div>`;
+  const solo = S.members.length<2;
+  // Aufgaben
+  const active = S.tasks.filter(isActive).sort((a,b)=>a.title.localeCompare(b.title,"de"));
+  const pendT = S.tasks.filter(t=>!isActive(t));
+  $("taskList").innerHTML = active.length ? active.map(t=>`
+    <div class="taskline">
+      <button class="row" data-act="log" data-id="${t.id}" aria-label="${esc(t.title)} erledigt, ${pts(t.points)}"><span class="stamp">${t.points}</span><span class="main"><span class="t">${esc(t.title)}</span><span class="s">Antippen, wenn erledigt</span></span></button>
+      <button class="btn ghost square" data-act="edit" data-coll="tasks" data-id="${t.id}" aria-label="${esc(t.title)} bearbeiten">⋯</button>
+    </div>`).join("") : `<div class="empty">Noch keine bestätigten Aufgaben. Schlag unten eine vor. Sobald alle die Punkte bestätigt haben, erscheint sie hier.</div>`;
+  $("taskPendingNote").innerHTML = pendT.length ? `<button class="linkbtn" data-tab="approve">${pendT.length} ${pendT.length===1?"Aufgabe wartet":"Aufgaben warten"} auf Bestätigung →</button>` : "";
+  // Belohnungen
+  const myBal = S.me ? balance(S.me).b : 0;
+  const activeR = S.rewards.filter(isActive).sort((a,b)=>a.points-b.points);
+  const pendR = S.rewards.filter(r=>!isActive(r));
+  $("rewardList").innerHTML = activeR.length ? activeR.map(r=>{ const ok=myBal>=r.points; return `
+    <div class="row"><span class="stamp cost">${r.points}</span><span class="main"><span class="t">${esc(r.title)}</span><span class="s">${ok?"Du hast genug Punkte":`Dir fehlen noch ${r.points-myBal}`}</span></span>
+    <span class="actions"><button class="btn ghost" data-act="edit" data-coll="rewards" data-id="${r.id}" aria-label="${esc(r.title)} bearbeiten">⋯</button>
+    <button class="btn primary" data-act="redeem" data-id="${r.id}" data-confirm="Für ${r.points} einlösen?" ${ok?"":"disabled"}>Einlösen</button></span></div>` }).join("")
+    : `<div class="empty">Noch keine bestätigten Belohnungen. Schlag unten eine vor.</div>`;
+  $("rewardPendingNote").innerHTML = pendR.length ? `<button class="linkbtn" data-tab="approve">${pendR.length} ${pendR.length===1?"Belohnung wartet":"Belohnungen warten"} auf Bestätigung →</button>` : "";
+  const open = S.redemptions.filter(r=>!r.fulfilled).sort((a,b)=>(b.at||0)-(a.at||0));
+  $("openRedemptions").innerHTML = open.length ? open.map(r=>`
+    <div class="row">${av(r.uid)}<span class="main"><span class="t">${esc(r.title)}</span><span class="s">für ${esc(nameOf(r.uid))} · ${when(r.at)}</span></span>
+    <span class="actions">${r.uid===S.me?`<button class="btn ghost" data-act="undoRedeem" data-id="${r.id}" data-confirm="Zurückgeben?">Zurück</button>`:""}
+    <button class="btn" data-act="fulfill" data-id="${r.id}">Erfüllt</button></span></div>`).join("")
+    : `<div class="empty">Nichts offen. Eingelöste Belohnungen stehen hier, bis jemand sie als erfüllt markiert.</div>`;
+  // Bestätigen
+  const items = [...S.tasks.map(x=>({...x,coll:"tasks",kindLbl:"Aufgabe"})), ...S.rewards.map(x=>({...x,coll:"rewards",kindLbl:"Belohnung"})),
+    ...S.entries.filter(e=>e.kind==="free").map(x=>({...x,coll:"entries",kindLbl:"Freitext von "+nameOf(x.uid)}))]
+    .filter(x=>!isActive(x)).sort((a,b)=>(needsMe(b)-needsMe(a))||((b.at||0)-(a.at||0)));
+  const need = items.filter(needsMe).length;
+  $("badge").hidden = !need; $("badge").textContent = need;
+  $("approveList").innerHTML = (solo?`<div class="note">Du bist gerade allein in der Gruppe. Lade unter „Verlauf“ jemanden ein, damit ihr euch gegenseitig bestätigen könnt.</div>`:"") +
+    (items.length ? items.map(x=>{ const mine=needsMe(x), miss=missing(x), unit=x.coll==="rewards"?"kostet":"bringt";
+    return `<div class="row pending"><span class="stamp ${x.coll==="rewards"?"cost":""}">${x.points}</span>
+      <span class="main" style="flex:1 1 160px"><span class="pill">${esc(x.kindLbl)}</span><span class="t">${esc(x.title)}</span>
+      <span class="s">Vorschlag von ${esc(nameOf(x.proposedBy||x.uid))}: ${unit} ${pts(x.points)}${miss.length?` · wartet auf ${esc(miss.join(", "))}`:""}</span></span>
+      <span class="actions" style="flex:1 1 100%">
+        <button class="btn ghost danger" data-act="reject" data-coll="${x.coll}" data-id="${x.id}" data-confirm="Wirklich löschen?">Ablehnen</button>
+        <button class="btn ghost" data-act="counter" data-coll="${x.coll}" data-id="${x.id}">Anderer Wert</button>
+        ${mine?`<button class="btn primary" data-act="approve" data-coll="${x.coll}" data-id="${x.id}">Bestätigen</button>`:`<span class="pill ok">✓ von dir bestätigt</span>`}
+      </span></div>` }).join("") : `<div class="empty">Alles bestätigt. Neue Vorschläge tauchen hier auf.</div>`);
+  // Verlauf
+  const hist = [...S.entries.map(e=>({...e,h:"e"})), ...S.redemptions.map(r=>({...r,h:"r"}))].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100);
+  $("history").innerHTML = hist.length ? hist.map(x=>{
+    const val = x.h==="e" ? `<span class="plus">+${x.points}</span>` : `<span class="minus">−${x.cost}</span>`;
+    const st = x.h==="e" ? (x.kind==="free"&&!isActive(x)?` · <span class="pill">ausstehend</span>`:"") : (x.fulfilled?" · erfüllt":" · eingelöst");
+    const del = x.h==="e"&&x.uid===S.me ? `<button class="btn ghost danger" data-act="delEntry" data-id="${x.id}" data-confirm="Löschen?">Entfernen</button>` : "";
+    return `<div class="row">${av(x.uid)}<span class="main"><span class="t">${esc(x.title)}</span><span class="s">${esc(nameOf(x.uid))} · ${when(x.at)}${st}</span></span>${val}${del}</div>` }).join("")
+    : `<div class="empty">Noch nichts passiert. Tippe unter „Sammeln“ auf eine erledigte Aufgabe.</div>`;
+  $("members").innerHTML = S.members.map(m=>`<div class="row">${av(m.id)}<span class="main"><span class="t">${esc(m.name)}${m.id===S.me?" (du)":""}</span></span>
+    ${m.id===S.me?`<button class="btn ghost" data-act="rename">Umbenennen</button>`:`<button class="btn ghost danger" data-act="removeMember" data-id="${m.id}" data-confirm="Entfernen?">Entfernen</button>`}</div>`).join("");
+  $("groupCode").textContent = fmtCode(S.group);
+  $("inviteLink").textContent = inviteUrl();
+}
+function inviteUrl(){ const u = new URL(location.href); u.search = "?g="+S.group; u.hash=""; return u.toString() }
+
+function setTab(t){ S.tab=t; document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.view!==t);
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.dataset.tab===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+  store.set("hp_tab",t); window.scrollTo(0,0) }
+
+/* ---------- Gruppe ---------- */
+function enterGroup(code){
+  for (const u of unsubs) u(); unsubs=[];
+  S.group=code; S.ready={}; for (const c of COLLS) S[c]=[];
+  S.me = code ? store.get("hp_member_"+code) : null;
+  if (code) store.set("hp_group", code); else store.del("hp_group");
+  route();
+  if (!code) return;
+  for (const c of COLLS){
+    unsubs.push(onSnapshot(gcol(c), snap => {
+      S[c] = snap.docs.map(d=>({id:d.id, ...d.data()})); S.ready[c]=true; route();
+    }, err => { console.error(err);
+      showStatus(err.code==="permission-denied" ? "Kein Zugriff auf die Datenbank. Prüfe die Firestore-Regeln (siehe Anleitung)." : "Verbindung unterbrochen. Lade die Seite neu.") }));
+  }
+}
+function setMe(id){ S.me=id; store.set("hp_member_"+S.group, id); route() }
+
+$("createForm").addEventListener("submit", async ev => { ev.preventDefault();
+  const name=$("createName").value.trim(); if(!name) return;
+  const btn=ev.submitter; if(btn) btn.disabled=true;
+  try{
+    let code;
+    for (let i=0;i<5;i++){ code=rnd(8); const s=await getDoc(doc(fs,"groups",code)); if(!s.exists()) break }
+    await setDoc(doc(fs,"groups",code), {createdAt:Date.now()});
+    const mid = rnd(12, "abcdefghijkmnpqrstuvwxyz23456789");
+    store.set("hp_member_"+code, mid);
+    await setDoc(doc(fs,"groups",code,"members",mid), {name, joinedAt:Date.now()});
+    enterGroup(code); setTab("history");
+    toast("Gruppe gegründet. Lade jetzt jemanden ein.");
+  }catch(e){ console.error(e); toast(e.code==="permission-denied"?"Keine Berechtigung. Prüfe die Firestore-Regeln.":"Gründen hat nicht geklappt. Bist du online?") }
+  finally{ if(btn) btn.disabled=false }
+});
+$("joinCodeForm").addEventListener("submit", async ev => { ev.preventDefault();
+  const code=normCode($("joinCode").value); if(code.length!==8){ toast("Der Code hat 8 Zeichen, z. B. ABCD-EF23."); return }
+  try{ const s=await getDoc(doc(fs,"groups",code)); if(!s.exists()){ toast("Diese Gruppe gibt es nicht. Prüfe den Code."); return }
+    enterGroup(code) }catch(e){ console.error(e); toast("Beitreten hat nicht geklappt. Bist du online?") }
+});
+$("whoNewForm").addEventListener("submit", ev => { ev.preventDefault();
+  const name=$("whoName").value.trim(); if(!name) return;
+  const mid=rnd(12,"abcdefghijkmnpqrstuvwxyz23456789");
+  w(setDoc(gref("members",mid), {name, joinedAt:Date.now()})); $("whoName").value=""; setMe(mid) });
+$("renameForm").addEventListener("submit", ev => { ev.preventDefault();
+  const name=$("renameName").value.trim(); if(!name) return;
+  w(updateDoc(gref("members",S.me), {name})); $("renameOverlay").hidden=true });
+
+/* ---------- Aktionen ---------- */
+const find = (coll,id) => S[coll].find(x=>x.id===id);
+function clean(it){ const o={...it}; delete o.id; delete o.coll; delete o.kindLbl; delete o.h; return o }
+
+function approve(coll,id){ const it=find(coll,id); if(!it) return;
+  const ap={...(it.approvals||{}), [S.me]:true};
+  const all=S.members.length>=2 && S.members.every(m=>ap[m.id]);
+  const patch={["approvals."+S.me]:true}; if(all) patch.status="active";
+  w(updateDoc(gref(coll,id), patch));
+  toast(all?"Bestätigt. Zählt ab jetzt.":"Bestätigt. Es fehlen noch andere.") }
+
+document.addEventListener("click", ev => {
+  const tb=ev.target.closest("[data-tab]"); if(tb){ setTab(tb.dataset.tab); return }
+  const chip=ev.target.closest(".chips .chip"); if(chip){ const k=chip.parentNode.dataset.fill;
+    $(k+"Title").value=chip.dataset.t; $(k+"Points").value=chip.dataset.p; $(k+"Title").focus(); return }
+  const b=ev.target.closest("[data-act]"); if(!b) return;
+  if (b.dataset.confirm && !b.classList.contains("armed")){ const old=b.textContent; b.classList.add("armed"); b.textContent=b.dataset.confirm;
+    setTimeout(()=>{ b.classList.remove("armed"); b.textContent=old },3000); return }
+  b.classList.remove("armed");
+  const {act,id,coll}=b.dataset;
+  if (act==="log"){ const t=find("tasks",id); if(!t) return; const ref=doc(gcol("entries"));
+    w(setDoc(ref,{uid:S.me,title:t.title,points:t.points,taskId:t.id,kind:"task",status:"active",at:Date.now()}));
+    toast(`+${t.points} für ${t.title}`, ()=>w(deleteDoc(ref))) }
+  else if (act==="redeem"){ const r=find("rewards",id); if(!r) return; if(balance(S.me).b<r.points){ toast("Dafür reichen deine Punkte noch nicht."); return }
+    const ref=doc(gcol("redemptions"));
+    w(setDoc(ref,{uid:S.me,rewardId:r.id,title:r.title,cost:r.points,at:Date.now(),fulfilled:false}));
+    toast(`Eingelöst: ${r.title}`, ()=>w(deleteDoc(ref))) }
+  else if (act==="fulfill"){ w(updateDoc(gref("redemptions",id),{fulfilled:true,fulfilledBy:S.me,fulfilledAt:Date.now()})); toast("Als erfüllt markiert.") }
+  else if (act==="undoRedeem"){ w(deleteDoc(gref("redemptions",id))); toast("Punkte zurückgebucht.") }
+  else if (act==="approve") approve(coll,id);
+  else if (act==="reject"){ w(deleteDoc(gref(coll,id))); toast("Gelöscht.") }
+  else if (act==="delEntry"){ w(deleteDoc(gref("entries",id))); toast("Eintrag entfernt.") }
+  else if (act==="removeMember"){ w(deleteDoc(gref("members",id))); toast("Aus der Gruppe entfernt.") }
+  else if (act==="iam") setMe(id);
+  else if (act==="leave"){ enterGroup(null) }
+  else if (act==="rename"){ $("renameName").value=nameOf(S.me); $("renameOverlay").hidden=false; $("renameName").focus() }
+  else if (act==="renameCancel") $("renameOverlay").hidden=true;
+  else if (act==="copyInvite"){ const url=inviteUrl();
+    const done=()=>toast("Link kopiert.");
+    if (navigator.share){ navigator.share({title:"Haushaltspunkte",text:`Mach mit bei unseren Haushaltspunkten! Code: ${fmtCode(S.group)}`,url}).catch(()=>{}) }
+    else if (navigator.clipboard) navigator.clipboard.writeText(url).then(done,()=>toast("Bitte den Link oben markieren und kopieren."));
+    else toast("Bitte den Link oben markieren und kopieren.") }
+  else if (act==="edit"||act==="counter") openEdit(coll,id,act);
+  else if (act==="editCancel") closeEdit();
+  else if (act==="editDelete"){ if(!edit) return; const e=edit; closeEdit(); w(deleteDoc(gref(e.coll,e.id))); toast("Gelöscht.") }
+});
+
+function openEdit(coll,id,mode){ const it=find(coll,id); if(!it) return; edit={coll,id,mode,orig:it};
+  const lbl={tasks:"Aufgabe",rewards:"Belohnung",entries:"Freitext-Aufgabe"}[coll];
+  $("editHead").textContent = mode==="counter" ? "Anderen Wert vorschlagen" : lbl+" bearbeiten";
+  $("editHint").textContent = mode==="counter" ? "Dein Vorschlag ersetzt den alten. Alle anderen müssen ihn dann neu bestätigen." : "Wenn du die Punkte änderst, müssen alle sie neu bestätigen. Den Namen kannst du einfach so ändern.";
+  $("editTitle").value=it.title; $("editPoints").value=it.points; $("editTitle").disabled = coll==="entries";
+  $("editDelete").hidden = mode==="counter"; $("editOverlay").hidden=false; $("editPoints").focus() }
+function closeEdit(){ edit=null; $("editOverlay").hidden=true }
+$("editForm").addEventListener("submit", ev => { ev.preventDefault(); if(!edit) return; const e=edit;
+  const title=$("editTitle").value.trim(), points=Math.round(+$("editPoints").value); if(!title||!(points>0)) return; closeEdit();
+  if (points!==e.orig.points){ w(setDoc(gref(e.coll,e.id), {...clean(e.orig),title,points,approvals:{[S.me]:true},status:"pending",proposedBy:S.me,at:e.orig.at||Date.now()})); toast("Neuer Wert vorgeschlagen.") }
+  else if (title!==e.orig.title){ w(updateDoc(gref(e.coll,e.id),{title})); toast("Gespeichert.") } });
+
+function propose(coll,title,points,extra){ w(setDoc(doc(gcol(coll)), {title,points,approvals:{[S.me]:true},status:"pending",proposedBy:S.me,at:Date.now(),...extra})) }
+function bindForm(f,t,p,fn){ $(f).addEventListener("submit", ev => { ev.preventDefault();
+  const title=$(t).value.trim(), points=Math.round(+$(p).value); if(!title||!(points>0)) return;
+  fn(title,points); $(t).value=""; $(p).value="" }) }
+bindForm("taskForm","taskTitle","taskPoints",(t,p)=>{ propose("tasks",t,p); toast("Vorgeschlagen. Sobald alle bestätigen, kannst du sie antippen.") });
+bindForm("rewardForm","rewardTitle","rewardPoints",(t,p)=>{ propose("rewards",t,p); toast("Vorgeschlagen. Wartet auf Bestätigung.") });
+bindForm("freeForm","freeTitle","freePoints",(t,p)=>{ propose("entries",t,p,{uid:S.me,kind:"free"}); toast(`+${p} eingetragen. Zählt nach Bestätigung.`) });
+document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); $("renameOverlay").hidden=true } });
+
+/* ---------- Start ---------- */
+function boot(){
+  const t=store.get("hp_tab"); if(t) setTab(t);
+  if (!firebaseConfig || !firebaseConfig.apiKey || String(firebaseConfig.apiKey).includes("HIER")){
+    showStatus("Firebase ist noch nicht eingerichtet. Trage deine Firebase-Daten in config.js ein (siehe ANLEITUNG.md)."); return }
+  const app = initializeApp(firebaseConfig);
+  try { fs = initializeFirestore(app, {localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})}) }
+  catch(e){ fs = initializeFirestore(app, {localCache: memoryLocalCache()}) }
+  const auth = getAuth(app);
+  showStatus("Verbinde …");
+  let started=false;
+  onAuthStateChanged(auth, u => {
+    if (!u){ signInAnonymously(auth).catch(e => { console.error(e);
+      showStatus(e.code==="auth/operation-not-allowed" ? "Die anonyme Anmeldung ist in Firebase noch nicht aktiviert (siehe Anleitung, Schritt 3)." : "Keine Verbindung. Bist du online?") }); return }
+    showStatus("");
+    if (started) return; started=true;
+    const urlCode = normCode(new URLSearchParams(location.search).get("g"));
+    const saved = store.get("hp_group");
+    if (urlCode && urlCode.length===8 && urlCode!==saved){ $("joinCode").value=fmtCode(urlCode); enterGroup(null); toast("Tippe auf „Beitreten“, um der Gruppe beizutreten.") }
+    else enterGroup(saved);
+  });
+}
+boot();
+</script>
+</body>
+</html>
