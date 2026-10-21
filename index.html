@@ -105,6 +105,10 @@ input.code{font-family:var(--display);font-weight:800;letter-spacing:.12em;text-
 .pill.ok{background:transparent;color:var(--ok);padding-left:0;align-self:center}
 .plus{color:var(--ok);font-weight:800;font-variant-numeric:tabular-nums}
 .minus{color:var(--danger);font-weight:800;font-variant-numeric:tabular-nums}
+.todo{background:var(--gold-soft);border:2px solid var(--gold);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.todo .row{background:var(--surface);flex-wrap:wrap}
+.todo .row .actions{flex:1 1 100%}
+.step{font-size:12px;font-weight:700;color:var(--gold)}
 .bigcode{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:.14em;user-select:all}
 .linkbox{font-size:13px;color:var(--muted);overflow-wrap:anywhere;user-select:all}
 
@@ -166,6 +170,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 
   <!-- APP -->
   <div id="screenApp" class="stack" hidden>
+    <section class="todo" id="todo" hidden></section>
     <div class="balances" id="balances"></div>
 
     <div data-view="collect" class="view stack">
@@ -211,17 +216,17 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
         <div id="rewardPendingNote"></div>
       </section>
       <section>
-        <div class="sechead"><h2>Offen</h2><span class="label">Noch einzulösen</span></div>
+        <div class="sechead"><h2>Eingelöst, noch offen</h2><span class="label">Bis bestätigt</span></div>
         <div class="list" id="openRedemptions"></div>
       </section>
       <section class="card">
         <h3>Neue Belohnung</h3>
         <div class="chips" data-fill="reward">
           <button type="button" class="chip" data-t="Kakao gemacht bekommen" data-p="15">Kakao · 15</button>
-          <button type="button" class="chip" data-t="Date Night" data-p="100">Date Night · 100</button>
-          <button type="button" class="chip" data-t="Frühstück ans Bett" data-p="40">Frühstück ans Bett · 40</button>
-          <button type="button" class="chip" data-t="Massage" data-p="30">Massage · 30</button>
-          <button type="button" class="chip" data-t="Filmauswahl für den Abend" data-p="10">Filmauswahl · 10</button>
+          <button type="button" class="chip" data-t="Filmabend aussuchen" data-p="10">Filmabend aussuchen · 10</button>
+          <button type="button" class="chip" data-t="Eine Aufgabe abgeben" data-p="25">Eine Aufgabe abgeben · 25</button>
+          <button type="button" class="chip" data-t="Frühstück machen lassen" data-p="30">Frühstück machen lassen · 30</button>
+          <button type="button" class="chip" data-t="Lieblingsessen kochen lassen" data-p="40">Lieblingsessen kochen lassen · 40</button>
         </div>
         <form class="add" id="rewardForm">
           <div class="fields">
@@ -265,7 +270,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 
 <nav class="tabs" id="tabs" aria-label="Bereiche" hidden><div class="in">
   <button data-tab="collect" aria-current="page"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Sammeln</button>
-  <button data-tab="redeem"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1s6 1 6 1c0 0 6 2 6-1s-4-3-6 1"/></svg>Einlösen</button>
+  <button data-tab="redeem"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1s6 1 6 1c0 0 6 2 6-1s-4-3-6 1"/></svg>Einlösen<span class="badge" id="badgeRedeem" hidden>0</span></button>
   <button data-tab="approve"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Bestätigen<span class="badge" id="badge" hidden>0</span></button>
   <button data-tab="history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>Verlauf</button>
 </div></nav>
@@ -343,6 +348,45 @@ function balance(uid){ let b=0,p=0;
   for (const r of S.redemptions){ if (r.uid===uid) b-=r.cost||0 }
   return {b,p} }
 
+/* ---------- Einlösungen: offen → übernommen → erledigt → bestätigt ---------- */
+function redStatus(r){ return r.status || (r.fulfilled ? "fulfilled" : "open") }
+function myRedTodo(r){ const st=redStatus(r);
+  return (st==="open" && r.uid!==S.me) || (st==="claimed" && r.claimedBy===S.me) || (st==="done" && r.uid===S.me) }
+function redRow(r){
+  const st=redStatus(r), who=esc(nameOf(r.uid)), doer=esc(nameOf(r.claimedBy)), me=S.me;
+  let step="", info="", btns="";
+  if (st==="open"){
+    step="1 · Wartet auf jemanden";
+    info = r.uid===me ? `Du hast das eingelöst · ${when(r.at)}` : `${who} hat das eingelöst · ${when(r.at)}`;
+    btns = r.uid===me ? `<button class="btn ghost" data-act="undoRedeem" data-id="${r.id}" data-confirm="Punkte zurück?">Zurücknehmen</button>`
+                      : `<button class="btn primary" data-act="claim" data-id="${r.id}">Ich übernehme das</button>`;
+  } else if (st==="claimed"){
+    step="2 · Wird erledigt";
+    info = r.claimedBy===me ? `Du erledigst das für ${who}` : `${doer} erledigt das für ${r.uid===me?"dich":who}`;
+    if (r.claimedBy===me) btns=`<button class="btn ghost" data-act="release" data-id="${r.id}">Abgeben</button><button class="btn primary" data-act="markDone" data-id="${r.id}">Erledigt</button>`;
+  } else if (st==="done"){
+    step="3 · Wartet auf Bestätigung";
+    info = r.uid===me ? `${doer} sagt: erledigt. Stimmt das?` : `${r.claimedBy===me?"Du hast":doer+" hat"} das erledigt. ${who} muss noch bestätigen.`;
+    if (r.uid===me) btns=`<button class="btn ghost" data-act="notYet" data-id="${r.id}">Noch nicht</button><button class="btn primary" data-act="confirmDone" data-id="${r.id}">Bestätigen</button>`;
+  }
+  return `<div class="row">${av(r.uid)}<span class="main"><span class="step">${step}</span><span class="t">${esc(r.title)}</span><span class="s">${info}</span></span>${btns?`<span class="actions">${btns}</span>`:""}</div>`;
+}
+function notifyRedemptions(snap){
+  for (const ch of snap.docChanges()){
+    if (ch.doc.metadata.hasPendingWrites || ch.type==="removed") continue;
+    const r={id:ch.doc.id, ...ch.doc.data()}, st=redStatus(r);
+    let msg="";
+    if (ch.type==="added" && r.uid!==S.me) msg=`${nameOf(r.uid)} hat „${r.title}“ eingelöst. Wer übernimmt?`;
+    if (ch.type==="modified"){
+      if (st==="claimed" && r.uid===S.me && r.claimedBy!==S.me) msg=`${nameOf(r.claimedBy)} übernimmt „${r.title}“.`;
+      if (st==="done" && r.uid===S.me) msg=`${nameOf(r.claimedBy)} hat „${r.title}“ erledigt. Bitte bestätigen.`;
+      if (st==="fulfilled" && r.claimedBy===S.me) msg=`${nameOf(r.uid)} hat „${r.title}“ als erfüllt bestätigt. Danke!`;
+      if (st==="open" && r.uid!==S.me && r.claimedBy==null && ch.oldIndex>=0) msg=`„${r.title}“ ist wieder frei. Wer übernimmt?`;
+    }
+    if (msg){ toast(msg); try{ navigator.vibrate && navigator.vibrate(120) }catch(e){} }
+  }
+}
+
 /* ---------- Hilfen ---------- */
 function toast(msg, undo){ const h=$("toastHost"); h.innerHTML=""; const t=document.createElement("div"); t.className="toast";
   const s=document.createElement("span"); s.textContent=msg; t.appendChild(s);
@@ -406,12 +450,13 @@ function render(){
     <button class="btn primary" data-act="redeem" data-id="${r.id}" data-confirm="Für ${r.points} einlösen?" ${ok?"":"disabled"}>Einlösen</button></span></div>` }).join("")
     : `<div class="empty">Noch keine bestätigten Belohnungen. Schlag unten eine vor.</div>`;
   $("rewardPendingNote").innerHTML = pendR.length ? `<button class="linkbtn" data-tab="approve">${pendR.length} ${pendR.length===1?"Belohnung wartet":"Belohnungen warten"} auf Bestätigung →</button>` : "";
-  const open = S.redemptions.filter(r=>!r.fulfilled).sort((a,b)=>(b.at||0)-(a.at||0));
-  $("openRedemptions").innerHTML = open.length ? open.map(r=>`
-    <div class="row">${av(r.uid)}<span class="main"><span class="t">${esc(r.title)}</span><span class="s">für ${esc(nameOf(r.uid))} · ${when(r.at)}</span></span>
-    <span class="actions">${r.uid===S.me?`<button class="btn ghost" data-act="undoRedeem" data-id="${r.id}" data-confirm="Zurückgeben?">Zurück</button>`:""}
-    <button class="btn" data-act="fulfill" data-id="${r.id}">Erfüllt</button></span></div>`).join("")
-    : `<div class="empty">Nichts offen. Eingelöste Belohnungen stehen hier, bis jemand sie als erfüllt markiert.</div>`;
+  const open = S.redemptions.filter(r=>redStatus(r)!=="fulfilled").sort((a,b)=>(b.at||0)-(a.at||0));
+  $("openRedemptions").innerHTML = open.length ? open.map(redRow).join("")
+    : `<div class="empty">Nichts offen. Eingelöste Belohnungen stehen hier, bis der Einlöser bestätigt, dass sie erfüllt sind.</div>`;
+  const mine = open.filter(myRedTodo);
+  $("todo").hidden = !mine.length;
+  $("todo").innerHTML = mine.length ? `<div class="sechead"><h2>Für dich zu tun</h2><span class="label">${mine.length}</span></div><div class="list">${mine.map(redRow).join("")}</div>` : "";
+  $("badgeRedeem").hidden = !mine.length; $("badgeRedeem").textContent = mine.length;
   // Bestätigen
   const items = [...S.tasks.map(x=>({...x,coll:"tasks",kindLbl:"Aufgabe"})), ...S.rewards.map(x=>({...x,coll:"rewards",kindLbl:"Belohnung"})),
     ...S.entries.filter(e=>e.kind==="free").map(x=>({...x,coll:"entries",kindLbl:"Freitext von "+nameOf(x.uid)}))]
@@ -432,7 +477,7 @@ function render(){
   const hist = [...S.entries.map(e=>({...e,h:"e"})), ...S.redemptions.map(r=>({...r,h:"r"}))].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100);
   $("history").innerHTML = hist.length ? hist.map(x=>{
     const val = x.h==="e" ? `<span class="plus">+${x.points}</span>` : `<span class="minus">−${x.cost}</span>`;
-    const st = x.h==="e" ? (x.kind==="free"&&!isActive(x)?` · <span class="pill">ausstehend</span>`:"") : (x.fulfilled?" · erfüllt":" · eingelöst");
+    const st = x.h==="e" ? (x.kind==="free"&&!isActive(x)?` · <span class="pill">ausstehend</span>`:"") : (redStatus(x)==="fulfilled"?` · erfüllt${x.claimedBy?" von "+esc(nameOf(x.claimedBy)):""}`:" · eingelöst, offen");
     const del = x.h==="e"&&x.uid===S.me ? `<button class="btn ghost danger" data-act="delEntry" data-id="${x.id}" data-confirm="Löschen?">Entfernen</button>` : "";
     return `<div class="row">${av(x.uid)}<span class="main"><span class="t">${esc(x.title)}</span><span class="s">${esc(nameOf(x.uid))} · ${when(x.at)}${st}</span></span>${val}${del}</div>` }).join("")
     : `<div class="empty">Noch nichts passiert. Tippe unter „Sammeln“ auf eine erledigte Aufgabe.</div>`;
@@ -457,6 +502,7 @@ function enterGroup(code){
   if (!code) return;
   for (const c of COLLS){
     unsubs.push(onSnapshot(gcol(c), snap => {
+      if (c==="redemptions" && S.ready.redemptions && S.me) notifyRedemptions(snap);
       S[c] = snap.docs.map(d=>({id:d.id, ...d.data()})); S.ready[c]=true; route();
     }, err => { console.error(err);
       showStatus(err.code==="permission-denied" ? "Kein Zugriff auf die Datenbank. Prüfe die Firestore-Regeln (siehe Anleitung)." : "Verbindung unterbrochen. Lade die Seite neu.") }));
@@ -517,9 +563,13 @@ document.addEventListener("click", ev => {
     toast(`+${t.points} für ${t.title}`, ()=>w(deleteDoc(ref))) }
   else if (act==="redeem"){ const r=find("rewards",id); if(!r) return; if(balance(S.me).b<r.points){ toast("Dafür reichen deine Punkte noch nicht."); return }
     const ref=doc(gcol("redemptions"));
-    w(setDoc(ref,{uid:S.me,rewardId:r.id,title:r.title,cost:r.points,at:Date.now(),fulfilled:false}));
-    toast(`Eingelöst: ${r.title}`, ()=>w(deleteDoc(ref))) }
-  else if (act==="fulfill"){ w(updateDoc(gref("redemptions",id),{fulfilled:true,fulfilledBy:S.me,fulfilledAt:Date.now()})); toast("Als erfüllt markiert.") }
+    w(setDoc(ref,{uid:S.me,rewardId:r.id,title:r.title,cost:r.points,at:Date.now(),status:"open",fulfilled:false,claimedBy:null}));
+    toast(`Eingelöst: ${r.title}. Die anderen sehen es jetzt.`, ()=>w(deleteDoc(ref))) }
+  else if (act==="claim"){ w(updateDoc(gref("redemptions",id),{status:"claimed",claimedBy:S.me,claimedAt:Date.now()})); toast("Übernommen. Tippe auf „Erledigt“, wenn du fertig bist.") }
+  else if (act==="release"){ w(updateDoc(gref("redemptions",id),{status:"open",claimedBy:null})); toast("Abgegeben. Jemand anderes kann es übernehmen.") }
+  else if (act==="markDone"){ w(updateDoc(gref("redemptions",id),{status:"done",doneAt:Date.now()})); toast("Erledigt gemeldet. Jetzt muss noch bestätigt werden.") }
+  else if (act==="confirmDone"){ w(updateDoc(gref("redemptions",id),{status:"fulfilled",fulfilled:true,fulfilledAt:Date.now()})); toast("Bestätigt. Viel Spaß!") }
+  else if (act==="notYet"){ const r=find("redemptions",id); w(updateDoc(gref("redemptions",id),{status:"claimed"})); toast(`Zurück an ${r?nameOf(r.claimedBy):"die Person"}.`) }
   else if (act==="undoRedeem"){ w(deleteDoc(gref("redemptions",id))); toast("Punkte zurückgebucht.") }
   else if (act==="approve") approve(coll,id);
   else if (act==="reject"){ w(deleteDoc(gref(coll,id))); toast("Gelöscht.") }
