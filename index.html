@@ -109,6 +109,12 @@ input.code{font-family:var(--display);font-weight:800;letter-spacing:.12em;text-
 .todo .row{background:var(--surface);flex-wrap:wrap}
 .todo .row .actions{flex:1 1 100%}
 .step{font-size:12px;font-weight:700;color:var(--gold)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.toggle:last-child{border-bottom:0}
+.toggle input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.toggle span{display:flex;flex-direction:column}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.topic{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;user-select:all;overflow-wrap:anywhere}
 .bigcode{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:.14em;user-select:all}
 .linkbox{font-size:13px;color:var(--muted);overflow-wrap:anywhere;user-select:all}
 
@@ -133,7 +139,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 <body class="noTabs">
 <div class="wrap">
   <div class="top">
-    <h1>Haushaltspunkte</h1>
+    <div style="min-width:0"><h1>Haushaltspunkte</h1><div class="label" id="groupName" hidden></div></div>
     <div class="me" id="meChip"></div>
   </div>
   <div id="status" class="note" hidden></div>
@@ -158,6 +164,11 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 
   <!-- WER BIST DU -->
   <div id="screenWho" class="stack" hidden>
+    <section class="card" id="whoPwCard" hidden>
+      <h3>Beitritts-Passwort</h3>
+      <p class="muted small">Diese Gruppe ist mit einem Passwort geschützt. Du bekommst es von einem Master der Gruppe.</p>
+      <input type="password" id="whoPw" placeholder="Passwort" autocomplete="off">
+    </section>
     <section>
       <h2>Wer bist du?</h2>
       <p class="muted small">Schon mal mitgemacht, zum Beispiel auf einem anderen Handy? Dann tippe auf deinen Namen.</p>
@@ -182,9 +193,9 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
         <div class="list" id="taskList"></div>
         <div id="taskPendingNote"></div>
       </section>
-      <section class="card">
+      <section class="card" id="freeCard">
         <h3>Etwas anderes erledigt</h3>
-        <p class="muted small">Freitext-Aufgabe mit Punktevorschlag. Die anderen bestätigen die Punkte, dann zählen sie.</p>
+        <p class="muted small">Freitext-Aufgabe mit Punktevorschlag. Ein Master prüft die Punkte und bestätigt.</p>
         <form class="add" id="freeForm">
           <div class="fields">
             <input type="text" id="freeTitle" placeholder="z. B. Fahrrad repariert" maxlength="80" required>
@@ -193,7 +204,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
           <div><button class="btn primary" type="submit">Eintragen</button></div>
         </form>
       </section>
-      <section class="card">
+      <section class="card" id="taskCard">
         <h3>Neue Standard-Aufgabe</h3>
         <div class="chips" data-fill="task">
           <button type="button" class="chip" data-t="Staubsaugen" data-p="10">Staubsaugen · 10</button>
@@ -222,7 +233,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
         <div class="sechead"><h2>Eingelöst, noch offen</h2><span class="label">Bis bestätigt</span></div>
         <div class="list" id="openRedemptions"></div>
       </section>
-      <section class="card">
+      <section class="card" id="rewardCard">
         <h3>Neue Belohnung</h3>
         <div class="chips" data-fill="reward">
           <button type="button" class="chip" data-t="Kakao gemacht bekommen" data-p="15">Kakao · 15</button>
@@ -243,8 +254,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 
     <div data-view="approve" class="view stack" hidden>
       <section>
-        <div class="sechead"><h2>Punkte bestätigen</h2><span class="label">Einmalig von allen</span></div>
-        <p class="muted small">Jede neue Aufgabe, Belohnung und Freitext-Aufgabe zählt erst, wenn alle in der Gruppe die Punktzahl bestätigt haben. Wer einen anderen Wert vorschlägt, startet die Abstimmung neu.</p>
+        <div class="sechead"><h2>Bestätigen</h2><span class="label">Fair bleiben</span></div>
+        <p class="muted small">Erledigte Aufgaben zählen erst, wenn jemand anderes sie bestätigt. Neue Aufgaben, Belohnungen und ihre Punkte gibt ein Master frei.</p>
         <div class="list" id="approveList"></div>
       </section>
     </div>
@@ -260,6 +271,21 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
         <div class="bigcode" id="groupCode"></div>
         <div class="linkbox" id="inviteLink"></div>
         <div><button class="btn primary" data-act="copyInvite">Link kopieren</button></div>
+      </section>
+      <section class="card" id="pushCard"></section>
+      <section class="card" id="settingsCard" hidden>
+        <h3>Gruppe verwalten</h3>
+        <p class="muted small">Nur für Master sichtbar.</p>
+        <form class="add" id="groupNameForm">
+          <label class="label" for="groupNameInput">Gruppenname</label>
+          <div class="fields"><input type="text" id="groupNameInput" maxlength="40" placeholder="z. B. Unsere Wohnung"><button class="btn" type="submit">Speichern</button></div>
+        </form>
+        <form class="add" id="joinPwForm">
+          <label class="label" for="joinPwInput">Beitritts-Passwort</label>
+          <p class="muted small" id="joinPwState"></p>
+          <div class="fields"><input type="password" id="joinPwInput" autocomplete="new-password" placeholder="Neues Passwort"><button class="btn" type="submit">Setzen</button></div>
+          <div><button class="btn ghost danger" type="button" id="joinPwRemove" data-act="removeJoinPw" data-confirm="Wirklich entfernen?">Passwort entfernen</button></div>
+        </form>
       </section>
       <section>
         <div class="sechead"><h2>Gruppe</h2><span class="label">Mitglieder</span></div>
@@ -286,6 +312,14 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
   </form>
 </div>
 
+<div class="overlay" id="memberOverlay" hidden>
+  <div class="sheet" id="memberSheet">
+    <h2 id="memberHead">Mitglied</h2>
+    <div id="memberBody" class="stack" style="gap:12px"></div>
+    <div class="btns"><button class="btn primary" type="button" data-act="memberClose">Fertig</button></div>
+  </div>
+</div>
+
 <div class="overlay" id="editOverlay" hidden>
   <form class="sheet" id="editForm">
     <h2 id="editHead">Bearbeiten</h2>
@@ -308,12 +342,12 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache,
+import { initializeFirestore, memoryLocalCache,
   doc, collection, getDocs, query, limit, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig } from "./config.js";
 
 const COLLS = ["members","tasks","rewards","entries","redemptions"];
-const S = { group:null, me:null, tab:"collect", ready:{}, members:[], tasks:[], rewards:[], entries:[], redemptions:[] };
+const S = { group:null, me:null, tab:"collect", ready:{}, groupInfo:{}, members:[], tasks:[], rewards:[], entries:[], redemptions:[] };
 let fs = null, unsubs = [], edit = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -342,12 +376,34 @@ function when(t){ if(!t) return ""; const d=new Date(t), now=new Date(); const y
 const pts = n => `${n} ${n===1?"Punkt":"Punkte"}`;
 
 /* ---------- Punkte-Logik ---------- */
-function isActive(it){ if (it.status==="active") return true;
-  return S.members.length>=2 && S.members.every(m => it.approvals && it.approvals[m.id]) }
-function needsMe(it){ return !!S.me && !isActive(it) && !(it.approvals||{})[S.me] }
-function missing(it){ return S.members.filter(m => !(it.approvals||{})[m.id]).map(m => m.name) }
+// Master = wer die Gruppe gegründet hat (role "master"); bei älteren Gruppen das erste Mitglied.
+const RIGHTS = { confirm:"Erledigtes bestätigen", propose:"Aufgaben & Belohnungen vorschlagen", free:"Freitext-Aufgaben melden" };
+const memberOf = id => S.members.find(m=>m.id===id);
+// Master = alle Mitglieder mit role "master". Ältere Gruppen ohne Rolle: das erste Mitglied.
+function masterIds(){ const ms=S.members.filter(m=>m.role==="master").map(m=>m.id); if (ms.length) return ms;
+  const first=[...S.members].sort((a,b)=>(a.joinedAt||0)-(b.joinedAt||0))[0]; return first ? [first.id] : [] }
+const isMaster = id => masterIds().includes(id);
+const iAmMaster = () => !!S.me && isMaster(S.me);
+const masterNames = () => masterIds().map(nameOf).join(" oder ") || "einen Master";
+// Rechte: Master dürfen alles. Bei anderen sperrt restrict[recht] = true das Recht.
+function can(id, right){ if (isMaster(id)) return true; const m=memberOf(id); return !(m && m.restrict && m.restrict[right]) }
+// Aufgaben & Belohnungen zählen, sobald der Master sie bestätigt hat.
+function isActive(it){ return it.status==="active" }
+function canApproveItem(it){ return iAmMaster() && !isActive(it) }
+// Erledigte Aufgaben zählen erst, wenn jemand anderes bestätigt.
+// Bei Freitext von Nicht-Mastern muss der Master bestätigen (er legt damit auch die Punkte fest).
+function entryActive(e){ return e.status==="active" }
+function mayConfirm(id, e){ return id!==e.uid && can(id,"confirm") && (e.pointsOk===true || isMaster(id)) }
+function canConfirmEntry(e){ return !!S.me && !entryActive(e) && mayConfirm(S.me, e) }
+const confirmersOf = e => S.members.filter(m=>mayConfirm(m.id, e)).map(m=>m.id);
+function entryWaitText(e){
+  const c = confirmersOf(e);
+  if (!c.length) return S.members.length<2 ? "wartet auf ein zweites Gruppenmitglied" : "gerade darf das niemand bestätigen";
+  return `wartet auf ${c.map(nameOf).join(" oder ")}${e.pointsOk!==true?" (Punkte prüfen)":""}`;
+}
+const pendingFor = taskId => S.entries.filter(e=>e.taskId===taskId && e.uid===S.me && !entryActive(e)).length;
 function balance(uid){ let b=0,p=0;
-  for (const e of S.entries){ if (e.uid!==uid) continue; if (e.kind==="free" && !isActive(e)) p+=e.points||0; else b+=e.points||0 }
+  for (const e of S.entries){ if (e.uid!==uid) continue; if (entryActive(e)) b+=e.points||0; else p+=e.points||0 }
   for (const r of S.redemptions){ if (r.uid===uid) b-=r.cost||0 }
   return {b,p} }
 
@@ -390,11 +446,32 @@ function notifyRedemptions(snap){
   }
 }
 
+function notifyEntries(snap){
+  for (const ch of snap.docChanges()){
+    if (ch.doc.metadata.hasPendingWrites || ch.type==="removed") continue;
+    const e={id:ch.doc.id, ...ch.doc.data()}; let msg="";
+    if (ch.type==="added" && canConfirmEntry(e)) msg=`${nameOf(e.uid)} hat „${e.title}“ erledigt. Bitte bestätigen.`;
+    if (ch.type==="modified" && entryActive(e) && e.uid===S.me && e.confirmedBy!==S.me) msg=`${nameOf(e.confirmedBy)} hat „${e.title}“ bestätigt: +${e.points}`;
+    if (msg){ toast(msg); try{ navigator.vibrate && navigator.vibrate(120) }catch(err){} }
+  }
+}
+function notifyItems(snap, coll){
+  for (const ch of snap.docChanges()){
+    if (ch.doc.metadata.hasPendingWrites || ch.type==="removed") continue;
+    const it={id:ch.doc.id, ...ch.doc.data()}; let msg="";
+    if (canApproveItem(it) && it.proposedBy!==S.me) msg=`${nameOf(it.counterBy||it.proposedBy)} schlägt ${coll==="rewards"?"eine Belohnung":"eine Aufgabe"} vor: „${it.title}“.`;
+    if (ch.type==="modified" && isActive(it) && it.proposedBy===S.me && it.approvedBy && it.approvedBy!==S.me) msg=`„${it.title}“ wurde freigegeben.`;
+    if (msg) toast(msg);
+  }
+}
+
 /* ---------- Hilfen ---------- */
 function toast(msg, undo){ const h=$("toastHost"); h.innerHTML=""; const t=document.createElement("div"); t.className="toast";
   const s=document.createElement("span"); s.textContent=msg; t.appendChild(s);
   if (undo){ const b=document.createElement("button"); b.textContent="Rückgängig"; b.onclick=()=>{ h.innerHTML=""; undo() }; t.appendChild(b) }
   h.appendChild(t); clearTimeout(toast._t); toast._t=setTimeout(()=>{ if(t.parentNode) h.innerHTML="" },5000) }
+// Bricht nach 12 Sekunden ohne Antwort ab, statt endlos zu warten.
+function timeout(p, ms=12000){ return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej({code:"timeout"}),ms))]) }
 function showStatus(msg){ const s=$("status"); s.textContent=msg||""; s.hidden=!msg }
 // Schreibt im Hintergrund: offline landen Änderungen in der Warteschlange und werden später übertragen.
 function w(promise){ promise.catch(e => {
@@ -415,10 +492,12 @@ function route(){
   if (!S.ready.members) return;
   const meM = S.members.find(m=>m.id===S.me);
   if (!meM){ show("screenWho"); renderWho(); $("meChip").innerHTML=""; return }
+  if (!S._migrated && !S.members.some(m=>m.role==="master") && masterIds()[0]===S.me){ S._migrated=true; w(updateDoc(gref("members",S.me),{role:"master"})) }
   show("screenApp"); render();
 }
 
 function renderWho(){
+  $("whoPwCard").hidden = !S.groupInfo.joinPwHash;
   $("whoList").innerHTML = S.members.length
     ? [...S.members].sort((a,b)=>(a.joinedAt||0)-(b.joinedAt||0)).map(m=>`<button class="row" data-act="iam" data-id="${m.id}">${av(m.id)}<span class="main"><span class="t">Ich bin ${esc(m.name)}</span></span></button>`).join("")
     : `<div class="empty">Noch niemand in dieser Gruppe.</div>`;
@@ -433,15 +512,15 @@ function render(){
       return `<div class="bal ${m.id===S.me?"mine":""}"><div class="who">${av(m.id)}<span>${esc(m.name)}</span></div>
       <div class="num">${b}<small>${b===1?"Punkt":"Punkte"}</small></div>${p?`<div class="pend">+${p} warten auf Bestätigung</div>`:""}</div>` }).join("");
   } else $("balances").innerHTML = `<div class="bal"><div class="label">Punktestand</div><div class="muted small">Wird geladen …</div></div>`;
-  const solo = S.members.length<2;
+  const solo = S.members.length<2, master = iAmMaster();
   // Aufgaben
   const active = S.tasks.filter(isActive).sort((a,b)=>a.title.localeCompare(b.title,"de"));
   const pendT = S.tasks.filter(t=>!isActive(t));
   $("taskList").innerHTML = active.length ? active.map(t=>`
     <div class="taskline">
-      <button class="row" data-act="log" data-id="${t.id}" aria-label="${esc(t.title)} erledigt, ${pts(t.points)}"><span class="stamp">${t.points}</span><span class="main"><span class="t">${esc(t.title)}</span><span class="s">Antippen, wenn erledigt</span></span></button>
-      <button class="btn ghost square" data-act="edit" data-coll="tasks" data-id="${t.id}" aria-label="${esc(t.title)} bearbeiten">⋯</button>
-    </div>`).join("") : `<div class="empty">Noch keine bestätigten Aufgaben. Schlag unten eine vor. Sobald alle die Punkte bestätigt haben, erscheint sie hier.</div>`;
+      <button class="row" data-act="log" data-id="${t.id}" aria-label="${esc(t.title)} erledigt, ${pts(t.points)}"><span class="stamp">${t.points}</span><span class="main"><span class="t">${esc(t.title)}</span><span class="s">Antippen, wenn erledigt${pendingFor(t.id)?` · ${pendingFor(t.id)}× wartet auf Bestätigung`:""}</span></span></button>
+      ${master?`<button class="btn ghost square" data-act="edit" data-coll="tasks" data-id="${t.id}" aria-label="${esc(t.title)} bearbeiten">⋯</button>`:""}
+    </div>`).join("") : `<div class="empty">Noch keine Aufgaben. ${master?"Leg unten eine an.":`Schlag unten eine vor. Sobald ${esc(masterNames())} die Punkte bestätigt, erscheint sie hier.`}</div>`;
   $("taskPendingNote").innerHTML = pendT.length ? `<button class="linkbtn" data-tab="approve">${pendT.length} ${pendT.length===1?"Aufgabe wartet":"Aufgaben warten"} auf Bestätigung →</button>` : "";
   // Belohnungen
   const myBal = S.me ? balance(S.me).b : 0;
@@ -449,9 +528,9 @@ function render(){
   const pendR = S.rewards.filter(r=>!isActive(r));
   $("rewardList").innerHTML = activeR.length ? activeR.map(r=>{ const ok=myBal>=r.points; return `
     <div class="row"><span class="stamp cost">${r.points}</span><span class="main"><span class="t">${esc(r.title)}</span><span class="s">${ok?"Du hast genug Punkte":`Dir fehlen noch ${r.points-myBal}`}</span></span>
-    <span class="actions"><button class="btn ghost" data-act="edit" data-coll="rewards" data-id="${r.id}" aria-label="${esc(r.title)} bearbeiten">⋯</button>
+    <span class="actions">${master?`<button class="btn ghost" data-act="edit" data-coll="rewards" data-id="${r.id}" aria-label="${esc(r.title)} bearbeiten">⋯</button>`:""}
     <button class="btn primary" data-act="redeem" data-id="${r.id}" data-confirm="Für ${r.points} einlösen?" ${ok?"":"disabled"}>Einlösen</button></span></div>` }).join("")
-    : `<div class="empty">Noch keine bestätigten Belohnungen. Schlag unten eine vor.</div>`;
+    : `<div class="empty">Noch keine Belohnungen. ${master?"Leg unten eine an.":"Schlag unten eine vor."}</div>`;
   $("rewardPendingNote").innerHTML = pendR.length ? `<button class="linkbtn" data-tab="approve">${pendR.length} ${pendR.length===1?"Belohnung wartet":"Belohnungen warten"} auf Bestätigung →</button>` : "";
   const open = S.redemptions.filter(r=>redStatus(r)!=="fulfilled").sort((a,b)=>(b.at||0)-(a.at||0));
   $("openRedemptions").innerHTML = open.length ? open.map(redRow).join("")
@@ -461,34 +540,152 @@ function render(){
   $("todo").innerHTML = mine.length ? `<div class="sechead"><h2>Für dich zu tun</h2><span class="label">${mine.length}</span></div><div class="list">${mine.map(redRow).join("")}</div>` : "";
   $("badgeRedeem").hidden = !mine.length; $("badgeRedeem").textContent = mine.length;
   // Bestätigen
-  const items = [...S.tasks.map(x=>({...x,coll:"tasks",kindLbl:"Aufgabe"})), ...S.rewards.map(x=>({...x,coll:"rewards",kindLbl:"Belohnung"})),
-    ...S.entries.filter(e=>e.kind==="free").map(x=>({...x,coll:"entries",kindLbl:"Freitext von "+nameOf(x.uid)}))]
-    .filter(x=>!isActive(x)).sort((a,b)=>(needsMe(b)-needsMe(a))||((b.at||0)-(a.at||0)));
-  const need = items.filter(needsMe).length;
-  $("badge").hidden = !need; $("badge").textContent = need;
-  $("approveList").innerHTML = (solo?`<div class="note">Du bist gerade allein in der Gruppe. Lade unter „Verlauf“ jemanden ein, damit ihr euch gegenseitig bestätigen könnt.</div>`:"") +
-    (items.length ? items.map(x=>{ const mine=needsMe(x), miss=missing(x), unit=x.coll==="rewards"?"kostet":"bringt";
+  // 1) Erledigte Aufgaben, die noch jemand bestätigen muss
+  const pendE = S.entries.filter(e=>!entryActive(e)).sort((a,b)=>(canConfirmEntry(b)-canConfirmEntry(a))||((b.at||0)-(a.at||0)));
+  const entryHtml = pendE.map(e=>{ const ok=canConfirmEntry(e), own=e.uid===S.me;
+    let btns="";
+    if (ok) btns = `<button class="btn ghost danger" data-act="rejectEntry" data-id="${e.id}" data-confirm="Wirklich ablehnen?">Ablehnen</button>`
+      + (e.kind==="free"&&master?`<button class="btn ghost" data-act="counter" data-coll="entries" data-id="${e.id}">Anderer Wert</button>`:"")
+      + `<button class="btn primary" data-act="confirmEntry" data-id="${e.id}">Bestätigen</button>`;
+    else if (own) btns = `<button class="btn ghost danger" data-act="delEntry" data-id="${e.id}" data-confirm="Zurückziehen?">Zurückziehen</button>`;
+    return `<div class="row pending">${av(e.uid)}
+      <span class="main" style="flex:1 1 160px"><span class="pill">${e.kind==="free"?"Freitext":"Aufgabe"}</span><span class="t">${esc(e.title)}</span>
+      <span class="s">${own?"Du hast":esc(nameOf(e.uid))+" hat"} das erledigt · ${when(e.at)}${ok?"":" · "+esc(entryWaitText(e))}</span></span>
+      <span class="plus">+${e.points}</span>
+      ${btns?`<span class="actions" style="flex:1 1 100%">${btns}</span>`:""}</div>` }).join("");
+  // 2) Neue Aufgaben & Belohnungen, die der Master bestätigen muss
+  const items = [...S.tasks.map(x=>({...x,coll:"tasks",kindLbl:"Neue Aufgabe"})), ...S.rewards.map(x=>({...x,coll:"rewards",kindLbl:"Neue Belohnung"}))]
+    .filter(x=>!isActive(x)).sort((a,b)=>(b.at||0)-(a.at||0));
+  const itemHtml = items.map(x=>{ const unit=x.coll==="rewards"?"kostet":"bringt", own=(x.proposedBy===S.me);
+    const btns = master
+      ? `<button class="btn ghost danger" data-act="reject" data-coll="${x.coll}" data-id="${x.id}" data-confirm="Wirklich ablehnen?">Ablehnen</button>
+         <button class="btn ghost" data-act="counter" data-coll="${x.coll}" data-id="${x.id}">Anderer Wert</button>
+         <button class="btn primary" data-act="approve" data-coll="${x.coll}" data-id="${x.id}">Bestätigen</button>`
+      : (own?`<button class="btn ghost danger" data-act="reject" data-coll="${x.coll}" data-id="${x.id}" data-confirm="Zurückziehen?">Zurückziehen</button>`:"")
+        + (can(S.me,"propose")?`<button class="btn ghost" data-act="counter" data-coll="${x.coll}" data-id="${x.id}">Anderen Wert vorschlagen</button>`:"");
     return `<div class="row pending"><span class="stamp ${x.coll==="rewards"?"cost":""}">${x.points}</span>
-      <span class="main" style="flex:1 1 160px"><span class="pill">${esc(x.kindLbl)}</span><span class="t">${esc(x.title)}</span>
-      <span class="s">Vorschlag von ${esc(nameOf(x.proposedBy||x.uid))}: ${unit} ${pts(x.points)}${miss.length?` · wartet auf ${esc(miss.join(", "))}`:""}</span></span>
-      <span class="actions" style="flex:1 1 100%">
-        <button class="btn ghost danger" data-act="reject" data-coll="${x.coll}" data-id="${x.id}" data-confirm="Wirklich löschen?">Ablehnen</button>
-        <button class="btn ghost" data-act="counter" data-coll="${x.coll}" data-id="${x.id}">Anderer Wert</button>
-        ${mine?`<button class="btn primary" data-act="approve" data-coll="${x.coll}" data-id="${x.id}">Bestätigen</button>`:`<span class="pill ok">✓ von dir bestätigt</span>`}
-      </span></div>` }).join("") : `<div class="empty">Alles bestätigt. Neue Vorschläge tauchen hier auf.</div>`);
+      <span class="main" style="flex:1 1 160px"><span class="pill">${x.kindLbl}</span><span class="t">${esc(x.title)}</span>
+      <span class="s">Vorschlag von ${esc(nameOf(x.proposedBy))}: ${unit} ${pts(x.points)}${master?"":` · wartet auf ${esc(masterNames())}`}</span></span>
+      <span class="actions" style="flex:1 1 100%">${btns}</span></div>` }).join("");
+  const need = pendE.filter(canConfirmEntry).length + (master ? items.length : 0);
+  $("badge").hidden = !need; $("badge").textContent = need;
+  $("approveList").innerHTML =
+    (solo?`<div class="note">Du bist gerade allein in der Gruppe. Erledigte Aufgaben muss jemand anderes bestätigen. Lade unter „Verlauf“ jemanden ein.</div>`:"")
+    + `<div class="sechead"><h3>Erledigt</h3><span class="label">${pendE.length}</span></div>`
+    + (entryHtml || `<div class="empty">Keine offenen Meldungen.</div>`)
+    + `<div class="sechead"><h3>Neue Aufgaben &amp; Belohnungen</h3><span class="label">${items.length}</span></div>`
+    + (itemHtml || `<div class="empty">Keine offenen Vorschläge.</div>`);
   // Verlauf
   const hist = [...S.entries.map(e=>({...e,h:"e"})), ...S.redemptions.map(r=>({...r,h:"r"}))].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100);
   $("history").innerHTML = hist.length ? hist.map(x=>{
     const val = x.h==="e" ? `<span class="plus">+${x.points}</span>` : `<span class="minus">−${x.cost}</span>`;
-    const st = x.h==="e" ? (x.kind==="free"&&!isActive(x)?` · <span class="pill">ausstehend</span>`:"") : (redStatus(x)==="fulfilled"?` · erfüllt${x.claimedBy?" von "+esc(nameOf(x.claimedBy)):""}`:" · eingelöst, offen");
+    const st = x.h==="e" ? (!entryActive(x)?` · <span class="pill">wartet auf Bestätigung</span>`:(x.confirmedBy?` · bestätigt von ${esc(nameOf(x.confirmedBy))}`:"")) : (redStatus(x)==="fulfilled"?` · erfüllt${x.claimedBy?" von "+esc(nameOf(x.claimedBy)):""}`:" · eingelöst, offen");
     const del = x.h==="e"&&x.uid===S.me ? `<button class="btn ghost danger" data-act="delEntry" data-id="${x.id}" data-confirm="Löschen?">Entfernen</button>` : "";
     return `<div class="row">${av(x.uid)}<span class="main"><span class="t">${esc(x.title)}</span><span class="s">${esc(nameOf(x.uid))} · ${when(x.at)}${st}</span></span>${val}${del}</div>` }).join("")
     : `<div class="empty">Noch nichts passiert. Tippe unter „Sammeln“ auf eine erledigte Aufgabe.</div>`;
-  $("members").innerHTML = S.members.map(m=>`<div class="row">${av(m.id)}<span class="main"><span class="t">${esc(m.name)}${m.id===S.me?" (du)":""}</span></span>
-    ${m.id===S.me?`<button class="btn ghost" data-act="rename">Umbenennen</button>`:`<button class="btn ghost danger" data-act="removeMember" data-id="${m.id}" data-confirm="Entfernen?">Entfernen</button>`}</div>`).join("");
+  $("members").innerHTML = [...S.members].sort((a,b)=>(isMaster(b.id)-isMaster(a.id))||((a.joinedAt||0)-(b.joinedAt||0))).map(m=>{
+    const denied = isMaster(m.id) ? [] : Object.keys(RIGHTS).filter(r=>!can(m.id,r));
+    const sub = isMaster(m.id) ? "Master" : (denied.length ? "Darf nicht: "+denied.map(r=>RIGHTS[r]).join(", ") : "Mitglied");
+    const btns = (m.id===S.me?`<button class="btn ghost" data-act="rename">Umbenennen</button>`:"")
+      + (master?`<button class="btn" data-act="manage" data-id="${m.id}">Verwalten</button>`:"");
+    return `<div class="row" style="flex-wrap:wrap">${av(m.id)}<span class="main" style="flex:1 1 140px"><span class="t">${esc(m.name)}${m.id===S.me?" (du)":""}</span><span class="s">${esc(sub)}</span></span>${btns?`<span class="actions">${btns}</span>`:""}</div>` }).join("");
   $("groupCode").textContent = fmtCode(S.group);
   $("inviteLink").textContent = inviteUrl();
+  // Rechte: Formulare ausblenden, wenn gesperrt
+  $("freeCard").hidden = !can(S.me,"free");
+  $("taskCard").hidden = !can(S.me,"propose");
+  $("rewardCard").hidden = !can(S.me,"propose");
+  $("taskForm").querySelector("button[type=submit]").textContent = master ? "Anlegen" : "Vorschlagen";
+  $("rewardForm").querySelector("button[type=submit]").textContent = master ? "Anlegen" : "Vorschlagen";
+  // Gruppenname & Verwaltung
+  const gname = S.groupInfo.name || "";
+  $("groupName").textContent = gname; $("groupName").hidden = !gname;
+  $("settingsCard").hidden = !master;
+  if (master){
+    if (document.activeElement!==$("groupNameInput")) $("groupNameInput").value = gname;
+    $("joinPwState").textContent = S.groupInfo.joinPwHash
+      ? "Aktiv: Neue Mitglieder brauchen Code und Passwort. Wer schon drin ist, bleibt drin."
+      : "Kein Passwort gesetzt. Wer den Code kennt, kann beitreten.";
+    $("joinPwRemove").hidden = !S.groupInfo.joinPwHash;
+  }
+  renderPush();
+  if (openMemberId) renderMemberSheet();
 }
+
+/* ---------- Push über ntfy ---------- */
+function renderPush(){
+  const me = memberOf(S.me);
+  $("pushCard").innerHTML = !(me && me.ntfy)
+    ? `<h3>Push-Nachrichten</h3>
+       <p class="muted small">Bekomme eine Nachricht aufs Handy, wenn du etwas bestätigen sollst oder jemand etwas für dich erledigt, auch wenn die App geschlossen ist. Kostenlos über die App „ntfy“.</p>
+       <div><button class="btn primary" data-act="pushOn">Push einrichten</button></div>`
+    : `<h3>Push-Nachrichten</h3>
+       <ol class="steps">
+         <li>Installiere die kostenlose App <b>ntfy</b> aus dem App Store bzw. Google Play Store.</li>
+         <li>Tippe in ntfy auf <b>+</b> und gib dieses Thema ein. Der Server bleibt auf ntfy.sh.</li>
+       </ol>
+       <div class="topic">${esc(me.ntfy)}</div>
+       <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-act="copyTopic">Thema kopieren</button><button class="btn primary" data-act="pushTest">Test senden</button><button class="btn ghost danger" data-act="pushOff" data-confirm="Push ausschalten?">Ausschalten</button></div>
+       <p class="muted small">Das Thema ist dein persönlicher Kanal. Gib es nicht weiter, sonst kann jemand deine Nachrichten mitlesen.</p>`;
+}
+const appUrl = () => { const u=new URL(location.href); u.search=""; u.hash=""; return u.toString() };
+function sendNtfy(topic, title, msg){
+  const u = `https://ntfy.sh/${encodeURIComponent(topic)}?title=${encodeURIComponent(title)}&tags=house&click=${encodeURIComponent(appUrl())}`;
+  return fetch(u, {method:"POST", body:msg, headers:{"Content-Type":"text/plain"}});
+}
+// Schickt eine Push-Nachricht an alle genannten Mitglieder (außer an dich selbst), die Push eingerichtet haben.
+function push(ids, title, msg){
+  for (const id of new Set(ids.filter(Boolean))){
+    if (id===S.me) continue; const m=memberOf(id); if (!m || !m.ntfy) continue;
+    sendNtfy(m.ntfy, title, msg).catch(()=>{});
+  }
+}
+const myName = () => nameOf(S.me);
+const othersIds = () => S.members.map(m=>m.id).filter(id=>id!==S.me);
+
+/* ---------- Mitglied verwalten (nur Master) ---------- */
+let openMemberId = null;
+function renderMemberSheet(){
+  const m = memberOf(openMemberId); if (!m || !iAmMaster()){ closeMember(); return }
+  const mIsMaster = isMaster(m.id), lastMaster = mIsMaster && masterIds().length<=1;
+  $("memberHead").textContent = m.id===S.me ? `${m.name} (du)` : m.name;
+  $("memberBody").innerHTML = `
+    <label class="toggle"><span><b>Master</b><span class="muted small">Gibt Aufgaben &amp; Punkte frei, vergibt Rechte und verwaltet die Gruppe.${lastMaster?" Es muss mindestens einen Master geben.":""}</span></span>
+      <input type="checkbox" data-role="${m.id}" ${mIsMaster?"checked":""} ${lastMaster?"disabled":""}></label>
+    ${mIsMaster ? `<p class="muted small">Master haben alle Rechte.</p>` : Object.entries(RIGHTS).map(([r,lbl])=>`
+    <label class="toggle"><span>Darf ${esc(lbl)}</span><input type="checkbox" data-right="${r}" data-id="${m.id}" ${can(m.id,r)?"checked":""}></label>`).join("")}
+    ${m.id!==S.me?`<div><button class="btn ghost danger" data-act="removeMember" data-id="${m.id}" data-confirm="Wirklich entfernen?">Aus der Gruppe entfernen</button></div>`:""}`;
+}
+function openMember(id){ openMemberId=id; $("memberOverlay").hidden=false; renderMemberSheet() }
+function closeMember(){ openMemberId=null; $("memberOverlay").hidden=true }
+document.addEventListener("change", ev => {
+  const t = ev.target; if (!iAmMaster()) return;
+  if (t.dataset.role){ const id=t.dataset.role;
+    if (!t.checked && masterIds().length<=1){ t.checked=true; toast("Es muss mindestens einen Master geben."); return }
+    w(updateDoc(gref("members",id), {role: t.checked ? "master" : null}));
+    toast(t.checked ? `${nameOf(id)} ist jetzt Master.` : `${nameOf(id)} ist kein Master mehr.`);
+    push([id], "Haushaltspunkte", t.checked ? `${myName()} hat dir Master-Rechte gegeben.` : `${myName()} hat dir die Master-Rechte entzogen.`);
+  } else if (t.dataset.right){ const id=t.dataset.id, m=memberOf(id); if(!m) return;
+    const restrict = {...(m.restrict||{}), [t.dataset.right]: !t.checked};
+    w(updateDoc(gref("members",id), {restrict}));
+    toast(`${nameOf(id)} darf ${t.checked?"jetzt":"nicht mehr"}: ${RIGHTS[t.dataset.right]}.`);
+  }
+});
+
+/* ---------- Gruppe verwalten ---------- */
+async function sha(text){ const b=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("") }
+const groupDoc = () => gref("members","_group"); // Gruppen-Einstellungen liegen als Sonderdokument bei den Mitgliedern
+$("groupNameForm").addEventListener("submit", ev => { ev.preventDefault(); if(!iAmMaster()) return;
+  const name=$("groupNameInput").value.trim(); w(setDoc(groupDoc(), {name}, {merge:true})); $("groupNameInput").blur(); toast(name?"Gruppenname gespeichert.":"Gruppenname entfernt.") });
+$("joinPwForm").addEventListener("submit", async ev => { ev.preventDefault(); if(!iAmMaster()) return;
+  const pw=$("joinPwInput").value; if(pw.length<4){ toast("Bitte mindestens 4 Zeichen."); return }
+  const joinPwHash = await sha(pw+"|"+S.group);
+  w(setDoc(groupDoc(), {joinPwHash}, {merge:true})); $("joinPwInput").value=""; toast("Beitritts-Passwort gesetzt.") });
+async function joinPwOk(){
+  const h=S.groupInfo.joinPwHash; if(!h) return true;
+  const v=$("whoPw").value; if(!v){ toast("Bitte gib das Beitritts-Passwort ein."); $("whoPw").focus(); return false }
+  if (await sha(v+"|"+S.group)!==h){ toast("Das Passwort stimmt nicht."); return false }
+  $("whoPw").value=""; return true }
 function inviteUrl(){ const u = new URL(location.href); u.search = "?g="+S.group; u.hash=""; return u.toString() }
 
 function setTab(t){ S.tab=t; document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.view!==t);
@@ -498,15 +695,21 @@ function setTab(t){ S.tab=t; document.querySelectorAll(".view").forEach(v=>v.hid
 /* ---------- Gruppe ---------- */
 function enterGroup(code){
   for (const u of unsubs) u(); unsubs=[];
-  S.group=code; S.ready={}; for (const c of COLLS) S[c]=[];
+  S.group=code; S.ready={}; S.groupInfo={}; S._migrated=false; for (const c of COLLS) S[c]=[];
   S.me = code ? store.get("hp_member_"+code) : null;
   if (code) store.set("hp_group", code); else store.del("hp_group");
   route();
   if (!code) return;
   for (const c of COLLS){
     unsubs.push(onSnapshot(gcol(c), snap => {
-      if (c==="redemptions" && S.ready.redemptions && S.me) notifyRedemptions(snap);
-      S[c] = snap.docs.map(d=>({id:d.id, ...d.data()})); S.ready[c]=true; route();
+      if (S.ready[c] && S.me){
+        if (c==="redemptions") notifyRedemptions(snap);
+        else if (c==="entries") notifyEntries(snap);
+        else if (c==="tasks"||c==="rewards") notifyItems(snap, c);
+      }
+      let docs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      if (c==="members"){ S.groupInfo = docs.find(d=>d.id==="_group") || {}; docs = docs.filter(d=>!d.id.startsWith("_")) }
+      S[c] = docs; S.ready[c]=true; route();
     }, err => { console.error(err);
       showStatus(err.code==="permission-denied" ? "Kein Zugriff auf die Datenbank. Prüfe die Firestore-Regeln (siehe Anleitung)." : "Verbindung unterbrochen. Lade die Seite neu.") }));
   }
@@ -519,11 +722,11 @@ $("createForm").addEventListener("submit", async ev => { ev.preventDefault();
   try{
     const code=rnd(8);
     // Firebase prüft das Passwort in den Regeln. Ist es falsch, wird nichts angelegt.
-    await setDoc(doc(fs,"groups",code), {createdAt:Date.now(), pw});
+    await timeout(setDoc(doc(fs,"groups",code), {createdAt:Date.now(), pw}));
     $("createPw").value="";
     const mid = rnd(12, "abcdefghijkmnpqrstuvwxyz23456789");
     store.set("hp_member_"+code, mid);
-    await setDoc(doc(fs,"groups",code,"members",mid), {name, joinedAt:Date.now()});
+    await timeout(setDoc(doc(fs,"groups",code,"members",mid), {name, joinedAt:Date.now(), role:"master"}));
     enterGroup(code); setTab("history");
     toast("Gruppe gegründet. Lade jetzt jemanden ein.");
   }catch(e){ console.error(e); toast(e.code==="permission-denied"?"Das Passwort stimmt nicht. Zum Mitmachen brauchst du nur den Gruppen-Code.":"Gründen hat nicht geklappt. Bist du online?") }
@@ -532,11 +735,12 @@ $("createForm").addEventListener("submit", async ev => { ev.preventDefault();
 $("joinCodeForm").addEventListener("submit", async ev => { ev.preventDefault();
   const code=normCode($("joinCode").value); if(code.length!==8){ toast("Der Code hat 8 Zeichen, z. B. ABCD-EF23."); return }
   // Die Regeln geben Mitglieder nur heraus, wenn die Gruppe existiert.
-  try{ await getDocs(query(collection(fs,"groups",code,"members"), limit(1))); enterGroup(code) }
+  try{ await timeout(getDocs(query(collection(fs,"groups",code,"members"), limit(1)))); enterGroup(code) }
   catch(e){ console.error(e); toast(e.code==="permission-denied"?"Diese Gruppe gibt es nicht. Prüfe den Code.":"Beitreten hat nicht geklappt. Bist du online?") }
 });
-$("whoNewForm").addEventListener("submit", ev => { ev.preventDefault();
+$("whoNewForm").addEventListener("submit", async ev => { ev.preventDefault();
   const name=$("whoName").value.trim(); if(!name) return;
+  if (!(await joinPwOk())) return;
   const mid=rnd(12,"abcdefghijkmnpqrstuvwxyz23456789");
   w(setDoc(gref("members",mid), {name, joinedAt:Date.now()})); $("whoName").value=""; setMe(mid) });
 $("renameForm").addEventListener("submit", ev => { ev.preventDefault();
@@ -547,12 +751,16 @@ $("renameForm").addEventListener("submit", ev => { ev.preventDefault();
 const find = (coll,id) => S[coll].find(x=>x.id===id);
 function clean(it){ const o={...it}; delete o.id; delete o.coll; delete o.kindLbl; delete o.h; return o }
 
-function approve(coll,id){ const it=find(coll,id); if(!it) return;
-  const ap={...(it.approvals||{}), [S.me]:true};
-  const all=S.members.length>=2 && S.members.every(m=>ap[m.id]);
-  const patch={["approvals."+S.me]:true}; if(all) patch.status="active";
-  w(updateDoc(gref(coll,id), patch));
-  toast(all?"Bestätigt. Zählt ab jetzt.":"Bestätigt. Es fehlen noch andere.") }
+// Master bestätigt neue Aufgaben/Belohnungen samt Punktzahl
+function approve(coll,id){ const it=find(coll,id); if(!it||!canApproveItem(it)) return;
+  w(updateDoc(gref(coll,id), {status:"active", approvedBy:S.me, approvedAt:Date.now()}));
+  push([it.proposedBy, it.counterBy], "Freigegeben", `„${it.title}“ ist freigegeben (${pts(it.points)}).`);
+  toast(coll==="rewards"?"Belohnung freigegeben.":"Aufgabe freigegeben. Sie kann jetzt abgehakt werden.") }
+// Jemand anderes bestätigt, dass eine Aufgabe wirklich erledigt wurde
+function confirmEntry(id){ const e=find("entries",id); if(!e||!canConfirmEntry(e)) return;
+  w(updateDoc(gref("entries",id), {status:"active", pointsOk:true, confirmedBy:S.me, confirmedAt:Date.now()}));
+  push([e.uid], "Bestätigt", `${myName()} hat „${e.title}“ bestätigt: +${e.points}`);
+  toast(`Bestätigt: +${e.points} für ${nameOf(e.uid)}.`) }
 
 document.addEventListener("click", ev => {
   const tb=ev.target.closest("[data-tab]"); if(tb){ setTab(tb.dataset.tab); return }
@@ -564,23 +772,45 @@ document.addEventListener("click", ev => {
   b.classList.remove("armed");
   const {act,id,coll}=b.dataset;
   if (act==="log"){ const t=find("tasks",id); if(!t) return; const ref=doc(gcol("entries"));
-    w(setDoc(ref,{uid:S.me,title:t.title,points:t.points,taskId:t.id,kind:"task",status:"active",at:Date.now()}));
-    toast(`+${t.points} für ${t.title}`, ()=>w(deleteDoc(ref))) }
+    const entry={uid:S.me,title:t.title,points:t.points,taskId:t.id,kind:"task",status:"pending",pointsOk:true,at:Date.now()};
+    w(setDoc(ref,entry));
+    push(confirmersOf(entry), "Bitte bestätigen", `${myName()} hat „${t.title}“ erledigt (+${t.points}).`);
+    toast(`${t.title} gemeldet. Die ${t.points} Punkte zählen, sobald jemand bestätigt.`, ()=>w(deleteDoc(ref))) }
   else if (act==="redeem"){ const r=find("rewards",id); if(!r) return; if(balance(S.me).b<r.points){ toast("Dafür reichen deine Punkte noch nicht."); return }
     const ref=doc(gcol("redemptions"));
     w(setDoc(ref,{uid:S.me,rewardId:r.id,title:r.title,cost:r.points,at:Date.now(),status:"open",fulfilled:false,claimedBy:null}));
+    push(othersIds(), "Belohnung eingelöst", `${myName()} hat „${r.title}“ eingelöst. Wer übernimmt?`);
     toast(`Eingelöst: ${r.title}. Die anderen sehen es jetzt.`, ()=>w(deleteDoc(ref))) }
-  else if (act==="claim"){ w(updateDoc(gref("redemptions",id),{status:"claimed",claimedBy:S.me,claimedAt:Date.now()})); toast("Übernommen. Tippe auf „Erledigt“, wenn du fertig bist.") }
-  else if (act==="release"){ w(updateDoc(gref("redemptions",id),{status:"open",claimedBy:null})); toast("Abgegeben. Jemand anderes kann es übernehmen.") }
-  else if (act==="markDone"){ w(updateDoc(gref("redemptions",id),{status:"done",doneAt:Date.now()})); toast("Erledigt gemeldet. Jetzt muss noch bestätigt werden.") }
-  else if (act==="confirmDone"){ w(updateDoc(gref("redemptions",id),{status:"fulfilled",fulfilled:true,fulfilledAt:Date.now()})); toast("Bestätigt. Viel Spaß!") }
-  else if (act==="notYet"){ const r=find("redemptions",id); w(updateDoc(gref("redemptions",id),{status:"claimed"})); toast(`Zurück an ${r?nameOf(r.claimedBy):"die Person"}.`) }
+  else if (act==="claim"){ const r=find("redemptions",id); w(updateDoc(gref("redemptions",id),{status:"claimed",claimedBy:S.me,claimedAt:Date.now()}));
+    if (r) push([r.uid], "Wird erledigt", `${myName()} übernimmt „${r.title}“.`); toast("Übernommen. Tippe auf „Erledigt“, wenn du fertig bist.") }
+  else if (act==="release"){ const r=find("redemptions",id); w(updateDoc(gref("redemptions",id),{status:"open",claimedBy:null}));
+    if (r) push(othersIds().filter(x=>x!==r.uid), "Wieder frei", `„${r.title}“ für ${nameOf(r.uid)} sucht jemanden.`); toast("Abgegeben. Jemand anderes kann es übernehmen.") }
+  else if (act==="markDone"){ const r=find("redemptions",id); w(updateDoc(gref("redemptions",id),{status:"done",doneAt:Date.now()}));
+    if (r) push([r.uid], "Bitte bestätigen", `${myName()} hat „${r.title}“ erledigt.`); toast("Erledigt gemeldet. Jetzt muss noch bestätigt werden.") }
+  else if (act==="confirmDone"){ const r=find("redemptions",id); w(updateDoc(gref("redemptions",id),{status:"fulfilled",fulfilled:true,fulfilledAt:Date.now()}));
+    if (r) push([r.claimedBy], "Danke!", `${myName()} hat „${r.title}“ als erfüllt bestätigt.`); toast("Bestätigt. Viel Spaß!") }
+  else if (act==="notYet"){ const r=find("redemptions",id); w(updateDoc(gref("redemptions",id),{status:"claimed"}));
+    if (r) push([r.claimedBy], "Noch nicht ganz", `${myName()} sagt: „${r.title}“ ist noch nicht erledigt.`); toast(`Zurück an ${r?nameOf(r.claimedBy):"die Person"}.`) }
   else if (act==="undoRedeem"){ w(deleteDoc(gref("redemptions",id))); toast("Punkte zurückgebucht.") }
   else if (act==="approve") approve(coll,id);
-  else if (act==="reject"){ w(deleteDoc(gref(coll,id))); toast("Gelöscht.") }
+  else if (act==="confirmEntry") confirmEntry(id);
+  else if (act==="rejectEntry"){ const e=find("entries",id); if(!e||!canConfirmEntry(e)) return; w(deleteDoc(gref("entries",id)));
+    push([e.uid], "Nicht bestätigt", `${myName()} hat „${e.title}“ abgelehnt.`); toast("Abgelehnt. Es gibt keine Punkte dafür.") }
+  else if (act==="reject"){ const it=find(coll,id); if(!it||!(iAmMaster()||it.proposedBy===S.me)) return; w(deleteDoc(gref(coll,id)));
+    if (it.proposedBy!==S.me) push([it.proposedBy], "Abgelehnt", `${myName()} hat deinen Vorschlag „${it.title}“ abgelehnt.`); toast("Gelöscht.") }
   else if (act==="delEntry"){ w(deleteDoc(gref("entries",id))); toast("Eintrag entfernt.") }
-  else if (act==="removeMember"){ w(deleteDoc(gref("members",id))); toast("Aus der Gruppe entfernt.") }
-  else if (act==="iam") setMe(id);
+  else if (act==="removeMember"){ if(!iAmMaster()||id===S.me) return; if(isMaster(id)&&masterIds().length<=1) return; closeMember(); w(deleteDoc(gref("members",id))); toast("Aus der Gruppe entfernt.") }
+  else if (act==="iam"){ joinPwOk().then(ok=>{ if(ok) setMe(id) }) }
+  else if (act==="manage") openMember(id);
+  else if (act==="memberClose") closeMember();
+  else if (act==="pushOn"){ const topic="hp-"+rnd(20,"abcdefghijkmnpqrstuvwxyz23456789"); w(updateDoc(gref("members",S.me),{ntfy:topic})); toast("Push eingerichtet. Folge jetzt den Schritten.") }
+  else if (act==="pushOff"){ w(updateDoc(gref("members",S.me),{ntfy:null})); toast("Push ausgeschaltet.") }
+  else if (act==="pushTest"){ const m=memberOf(S.me); if(!m||!m.ntfy) return;
+    sendNtfy(m.ntfy,"Haushaltspunkte","Test: Push funktioniert! 🎉").then(r=>toast(r.ok?"Test gesendet. Kommt sie in ntfy an?":"Senden hat nicht geklappt."),()=>toast("Senden hat nicht geklappt. Bist du online?")) }
+  else if (act==="copyTopic"){ const m=memberOf(S.me); if(!m) return;
+    if (navigator.clipboard) navigator.clipboard.writeText(m.ntfy).then(()=>toast("Thema kopiert."),()=>toast("Bitte das Thema markieren und kopieren."));
+    else toast("Bitte das Thema markieren und kopieren.") }
+  else if (act==="removeJoinPw"){ if(!iAmMaster()) return; w(setDoc(groupDoc(),{joinPwHash:null},{merge:true})); toast("Beitritts-Passwort entfernt.") }
   else if (act==="showCreate"){ $("createForm").hidden=false; $("showCreate").hidden=true; $("createName").focus() }
   else if (act==="leave"){ enterGroup(null) }
   else if (act==="rename"){ $("renameName").value=nameOf(S.me); $("renameOverlay").hidden=false; $("renameName").focus() }
@@ -597,24 +827,48 @@ document.addEventListener("click", ev => {
 
 function openEdit(coll,id,mode){ const it=find(coll,id); if(!it) return; edit={coll,id,mode,orig:it};
   const lbl={tasks:"Aufgabe",rewards:"Belohnung",entries:"Freitext-Aufgabe"}[coll];
-  $("editHead").textContent = mode==="counter" ? "Anderen Wert vorschlagen" : lbl+" bearbeiten";
-  $("editHint").textContent = mode==="counter" ? "Dein Vorschlag ersetzt den alten. Alle anderen müssen ihn dann neu bestätigen." : "Wenn du die Punkte änderst, müssen alle sie neu bestätigen. Den Namen kannst du einfach so ändern.";
+  const m = iAmMaster();
+  $("editHead").textContent = mode==="counter" ? (m?"Punkte festlegen":"Anderen Wert vorschlagen") : lbl+" bearbeiten";
+  $("editHint").textContent = m
+    ? (coll==="entries" ? "Mit Speichern bestätigst du die Aufgabe mit dieser Punktzahl." : "Als Master gilt deine Punktzahl sofort.")
+    : `Dein Vorschlag ersetzt den alten. ${masterNames()} muss ihn bestätigen.`;
   $("editTitle").value=it.title; $("editPoints").value=it.points; $("editTitle").disabled = coll==="entries";
   $("editDelete").hidden = mode==="counter"; $("editOverlay").hidden=false; $("editPoints").focus() }
 function closeEdit(){ edit=null; $("editOverlay").hidden=true }
 $("editForm").addEventListener("submit", ev => { ev.preventDefault(); if(!edit) return; const e=edit;
   const title=$("editTitle").value.trim(), points=Math.round(+$("editPoints").value); if(!title||!(points>0)) return; closeEdit();
-  if (points!==e.orig.points){ w(setDoc(gref(e.coll,e.id), {...clean(e.orig),title,points,approvals:{[S.me]:true},status:"pending",proposedBy:S.me,at:e.orig.at||Date.now()})); toast("Neuer Wert vorgeschlagen.") }
-  else if (title!==e.orig.title){ w(updateDoc(gref(e.coll,e.id),{title})); toast("Gespeichert.") } });
+  const m = iAmMaster();
+  if (e.coll==="entries"){
+    // Nur der Master legt Punkte für Freitext fest; bei fremden Einträgen ist das zugleich die Bestätigung.
+    if (!m) return;
+    const patch = {points, pointsOk:true};
+    if (e.orig.uid!==S.me) Object.assign(patch, {status:"active", confirmedBy:S.me, confirmedAt:Date.now()});
+    w(updateDoc(gref("entries",e.id), patch)); toast(e.orig.uid!==S.me ? `Bestätigt mit ${pts(points)}.` : "Punkte geändert.");
+    if (e.orig.uid!==S.me) push([e.orig.uid], "Bestätigt", `${myName()} hat „${e.orig.title}“ mit ${pts(points)} bestätigt.`);
+  } else if (points!==e.orig.points){
+    w(setDoc(gref(e.coll,e.id), {...clean(e.orig), title, points, status: m?"active":"pending", proposedBy: e.orig.proposedBy||S.me,
+      ...(m?{approvedBy:S.me, approvedAt:Date.now()}:{counterBy:S.me}), at:e.orig.at||Date.now()}));
+    toast(m ? "Gespeichert. Gilt ab sofort." : `Vorschlag geschickt. ${masterNames()} muss bestätigen.`);
+    if (!m) push(masterIds(), "Neuer Vorschlag", `${myName()} schlägt für „${title}“ ${pts(points)} vor.`);
+  } else if (title!==e.orig.title && m){ w(updateDoc(gref(e.coll,e.id),{title})); toast("Gespeichert.") } });
 
-function propose(coll,title,points,extra){ w(setDoc(doc(gcol(coll)), {title,points,approvals:{[S.me]:true},status:"pending",proposedBy:S.me,at:Date.now(),...extra})) }
+function propose(coll,title,points,extra){ const m=iAmMaster();
+  if (!m && !can(S.me,"propose")){ toast("Du darfst gerade keine Vorschläge machen."); return null }
+  w(setDoc(doc(gcol(coll)), {title,points,status:m?"active":"pending",proposedBy:S.me,at:Date.now(),...(m?{approvedBy:S.me}:{}),...extra}));
+  if (!m) push(masterIds(), "Neuer Vorschlag", `${myName()} schlägt ${coll==="rewards"?"als Belohnung":"als Aufgabe"} vor: „${title}“ (${pts(points)}).`);
+  return m }
 function bindForm(f,t,p,fn){ $(f).addEventListener("submit", ev => { ev.preventDefault();
   const title=$(t).value.trim(), points=Math.round(+$(p).value); if(!title||!(points>0)) return;
   fn(title,points); $(t).value=""; $(p).value="" }) }
-bindForm("taskForm","taskTitle","taskPoints",(t,p)=>{ propose("tasks",t,p); toast("Vorgeschlagen. Sobald alle bestätigen, kannst du sie antippen.") });
-bindForm("rewardForm","rewardTitle","rewardPoints",(t,p)=>{ propose("rewards",t,p); toast("Vorgeschlagen. Wartet auf Bestätigung.") });
-bindForm("freeForm","freeTitle","freePoints",(t,p)=>{ propose("entries",t,p,{uid:S.me,kind:"free"}); toast(`+${p} eingetragen. Zählt nach Bestätigung.`) });
-document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); $("renameOverlay").hidden=true } });
+bindForm("taskForm","taskTitle","taskPoints",(t,p)=>{ const r=propose("tasks",t,p); if(r===null) return; toast(r ? "Aufgabe angelegt." : `Vorgeschlagen. Sobald ${masterNames()} die Punkte bestätigt, kannst du sie antippen.`) });
+bindForm("rewardForm","rewardTitle","rewardPoints",(t,p)=>{ const r=propose("rewards",t,p); if(r===null) return; toast(r ? "Belohnung angelegt." : `Vorgeschlagen. Wartet auf ${masterNames()}.`) });
+bindForm("freeForm","freeTitle","freePoints",(t,p)=>{ const m=iAmMaster();
+  if (!can(S.me,"free")){ toast("Du darfst gerade keine Freitext-Aufgaben melden."); return }
+  const entry={uid:S.me,title:t,points:p,kind:"free",status:"pending",pointsOk:m,at:Date.now()};
+  w(setDoc(doc(gcol("entries")), entry));
+  push(confirmersOf(entry), "Bitte bestätigen", `${myName()} hat „${t}“ erledigt und schlägt ${pts(p)} vor.`);
+  toast(m ? `Gemeldet. Die ${p} Punkte zählen, sobald jemand bestätigt.` : `Gemeldet. ${masterNames()} prüft die Punkte und bestätigt.`) });
+document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); closeMember(); $("renameOverlay").hidden=true } });
 
 /* ---------- Start ---------- */
 function boot(){
@@ -622,8 +876,8 @@ function boot(){
   if (!firebaseConfig || !firebaseConfig.apiKey || String(firebaseConfig.apiKey).includes("HIER")){
     showStatus("Firebase ist noch nicht eingerichtet. Trage deine Firebase-Daten in config.js ein (siehe ANLEITUNG.md)."); return }
   const app = initializeApp(firebaseConfig);
-  try { fs = initializeFirestore(app, {localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})}) }
-  catch(e){ fs = initializeFirestore(app, {localCache: memoryLocalCache()}) }
+  // Arbeitsspeicher-Cache: der IndexedDB-Cache ist in manchen Browsern abgestürzt und hat die Verbindung blockiert.
+  fs = initializeFirestore(app, {localCache: memoryLocalCache()});
   const auth = getAuth(app);
   showStatus("Verbinde …");
   let started=false;
