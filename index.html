@@ -156,8 +156,9 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
     <form class="card" id="createForm" hidden>
       <h3>Neue Gruppe gründen</h3>
       <p class="muted small">Nur mit dem Gründungs-Passwort. Zum Mitmachen in einer bestehenden Gruppe brauchst du es nicht.</p>
-      <input type="text" id="createName" placeholder="Dein Name" maxlength="24" required>
       <input type="password" id="createPw" placeholder="Gründungs-Passwort" autocomplete="off" required>
+      <input type="text" id="createName" placeholder="Dein Name" maxlength="24" required>
+      <input type="password" id="createMyPw" placeholder="Dein persönliches Passwort (mind. 4 Zeichen)" autocomplete="new-password" minlength="4" required>
       <div><button class="btn" type="submit">Gruppe gründen</button></div>
     </form>
   </div>
@@ -177,6 +178,9 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
     <form class="card" id="whoNewForm">
       <h3>Ich bin neu hier</h3>
       <input type="text" id="whoName" placeholder="Dein Name" maxlength="24" required>
+      <input type="password" id="whoMyPw" placeholder="Dein persönliches Passwort (mind. 4 Zeichen)" autocomplete="new-password" minlength="4" required>
+      <input type="password" id="whoMyPw2" placeholder="Passwort wiederholen" autocomplete="new-password" minlength="4" required>
+      <p class="muted small">Mit diesem Passwort meldest du dich an. So kann sich niemand als du ausgeben.</p>
       <div><button class="btn primary" type="submit">Mitmachen</button></div>
     </form>
     <button class="linkbtn" data-act="leave">Andere Gruppe wählen</button>
@@ -303,6 +307,17 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
   <button data-tab="approve"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Bestätigen<span class="badge" id="badge" hidden>0</span></button>
   <button data-tab="history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>Verlauf</button>
 </div></nav>
+
+<div class="overlay" id="loginOverlay" hidden>
+  <form class="sheet" id="loginForm">
+    <h2 id="loginHead">Anmelden</h2>
+    <p class="muted small" id="loginHint"></p>
+    <input type="password" id="loginPwOld" placeholder="Aktuelles Passwort" autocomplete="current-password">
+    <input type="password" id="loginPw" placeholder="Passwort" autocomplete="current-password">
+    <input type="password" id="loginPw2" placeholder="Passwort wiederholen" autocomplete="new-password">
+    <div class="btns"><button class="btn ghost" type="button" id="loginCancel" data-act="loginCancel">Abbrechen</button><button class="btn primary" type="submit" id="loginSubmit">Anmelden</button></div>
+  </form>
+</div>
 
 <div class="overlay" id="renameOverlay" hidden>
   <form class="sheet" id="renameForm">
@@ -494,12 +509,13 @@ function route(){
   if (!meM){ show("screenWho"); renderWho(); $("meChip").innerHTML=""; return }
   if (!S._migrated && !S.members.some(m=>m.role==="master") && masterIds()[0]===S.me){ S._migrated=true; w(updateDoc(gref("members",S.me),{role:"master"})) }
   show("screenApp"); render();
+  if (!meM.pwHash && !login) openLogin("set", S.me, true);
 }
 
 function renderWho(){
   $("whoPwCard").hidden = !S.groupInfo.joinPwHash;
   $("whoList").innerHTML = S.members.length
-    ? [...S.members].sort((a,b)=>(a.joinedAt||0)-(b.joinedAt||0)).map(m=>`<button class="row" data-act="iam" data-id="${m.id}">${av(m.id)}<span class="main"><span class="t">Ich bin ${esc(m.name)}</span></span></button>`).join("")
+    ? [...S.members].sort((a,b)=>(a.joinedAt||0)-(b.joinedAt||0)).map(m=>`<button class="row" data-act="iam" data-id="${m.id}">${av(m.id)}<span class="main"><span class="t">Ich bin ${esc(m.name)}</span><span class="s">${m.pwHash?"Mit Passwort anmelden":"Noch kein Passwort, jetzt festlegen"}</span></span></button>`).join("")
     : `<div class="empty">Noch niemand in dieser Gruppe.</div>`;
 }
 
@@ -586,7 +602,7 @@ function render(){
   $("members").innerHTML = [...S.members].sort((a,b)=>(isMaster(b.id)-isMaster(a.id))||((a.joinedAt||0)-(b.joinedAt||0))).map(m=>{
     const denied = isMaster(m.id) ? [] : Object.keys(RIGHTS).filter(r=>!can(m.id,r));
     const sub = isMaster(m.id) ? "Master" : (denied.length ? "Darf nicht: "+denied.map(r=>RIGHTS[r]).join(", ") : "Mitglied");
-    const btns = (m.id===S.me?`<button class="btn ghost" data-act="rename">Umbenennen</button>`:"")
+    const btns = (m.id===S.me?`<button class="btn ghost" data-act="rename">Umbenennen</button><button class="btn ghost" data-act="changePw">Passwort ändern</button>`:"")
       + (master?`<button class="btn" data-act="manage" data-id="${m.id}">Verwalten</button>`:"");
     return `<div class="row" style="flex-wrap:wrap">${av(m.id)}<span class="main" style="flex:1 1 140px"><span class="t">${esc(m.name)}${m.id===S.me?" (du)":""}</span><span class="s">${esc(sub)}</span></span>${btns?`<span class="actions">${btns}</span>`:""}</div>` }).join("");
   $("groupCode").textContent = fmtCode(S.group);
@@ -654,7 +670,9 @@ function renderMemberSheet(){
       <input type="checkbox" data-role="${m.id}" ${mIsMaster?"checked":""} ${lastMaster?"disabled":""}></label>
     ${mIsMaster ? `<p class="muted small">Master haben alle Rechte.</p>` : Object.entries(RIGHTS).map(([r,lbl])=>`
     <label class="toggle"><span>Darf ${esc(lbl)}</span><input type="checkbox" data-right="${r}" data-id="${m.id}" ${can(m.id,r)?"checked":""}></label>`).join("")}
-    ${m.id!==S.me?`<div><button class="btn ghost danger" data-act="removeMember" data-id="${m.id}" data-confirm="Wirklich entfernen?">Aus der Gruppe entfernen</button></div>`:""}`;
+    ${m.id!==S.me?`<div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${m.pwHash?`<button class="btn ghost" data-act="resetPw" data-id="${m.id}" data-confirm="Wirklich zurücksetzen?">Passwort zurücksetzen</button>`:`<span class="muted small">Hat noch kein Passwort.</span>`}
+      <button class="btn ghost danger" data-act="removeMember" data-id="${m.id}" data-confirm="Wirklich entfernen?">Aus der Gruppe entfernen</button></div>`:""}`;
 }
 function openMember(id){ openMemberId=id; $("memberOverlay").hidden=false; renderMemberSheet() }
 function closeMember(){ openMemberId=null; $("memberOverlay").hidden=true }
@@ -717,7 +735,8 @@ function enterGroup(code){
 function setMe(id){ S.me=id; store.set("hp_member_"+S.group, id); route() }
 
 $("createForm").addEventListener("submit", async ev => { ev.preventDefault();
-  const name=$("createName").value.trim(), pw=$("createPw").value; if(!name||!pw) return;
+  const name=$("createName").value.trim(), pw=$("createPw").value, myPw=$("createMyPw").value; if(!name||!pw) return;
+  if (myPw.length<4){ toast("Dein persönliches Passwort braucht mindestens 4 Zeichen."); return }
   const btn=ev.submitter; if(btn) btn.disabled=true;
   try{
     const code=rnd(8);
@@ -726,7 +745,8 @@ $("createForm").addEventListener("submit", async ev => { ev.preventDefault();
     $("createPw").value="";
     const mid = rnd(12, "abcdefghijkmnpqrstuvwxyz23456789");
     store.set("hp_member_"+code, mid);
-    await timeout(setDoc(doc(fs,"groups",code,"members",mid), {name, joinedAt:Date.now(), role:"master"}));
+    const myHash = await pwHash(myPw, code, mid); $("createMyPw").value="";
+    await timeout(setDoc(doc(fs,"groups",code,"members",mid), {name, joinedAt:Date.now(), role:"master", pwHash:myHash}));
     enterGroup(code); setTab("history");
     toast("Gruppe gegründet. Lade jetzt jemanden ein.");
   }catch(e){ console.error(e); toast(e.code==="permission-denied"?"Das Passwort stimmt nicht. Zum Mitmachen brauchst du nur den Gruppen-Code.":"Gründen hat nicht geklappt. Bist du online?") }
@@ -739,10 +759,58 @@ $("joinCodeForm").addEventListener("submit", async ev => { ev.preventDefault();
   catch(e){ console.error(e); toast(e.code==="permission-denied"?"Diese Gruppe gibt es nicht. Prüfe den Code.":"Beitreten hat nicht geklappt. Bist du online?") }
 });
 $("whoNewForm").addEventListener("submit", async ev => { ev.preventDefault();
-  const name=$("whoName").value.trim(); if(!name) return;
+  const name=$("whoName").value.trim(), p1=$("whoMyPw").value, p2=$("whoMyPw2").value; if(!name) return;
+  if (p1.length<4){ toast("Dein Passwort braucht mindestens 4 Zeichen."); return }
+  if (p1!==p2){ toast("Die beiden Passwörter sind nicht gleich."); return }
   if (!(await joinPwOk())) return;
   const mid=rnd(12,"abcdefghijkmnpqrstuvwxyz23456789");
-  w(setDoc(gref("members",mid), {name, joinedAt:Date.now()})); $("whoName").value=""; setMe(mid) });
+  const h=await pwHash(p1, S.group, mid);
+  w(setDoc(gref("members",mid), {name, joinedAt:Date.now(), pwHash:h}));
+  $("whoName").value=""; $("whoMyPw").value=""; $("whoMyPw2").value=""; setMe(mid) });
+
+/* ---------- Persönliches Passwort ---------- */
+// PBKDF2 mit vielen Durchläufen: Gespeichert wird nur ein Fingerabdruck, der sich kaum zurückrechnen lässt.
+async function pwHash(pw, group, memberId){
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt:new TextEncoder().encode("hp|"+group+"|"+memberId), iterations:150000}, key, 256);
+  return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+let login = null; // {mode:"login"|"set"|"change", id, forced}
+function openLogin(mode, id, forced=false){
+  const m = memberOf(id); if(!m) return; login = {mode, id, forced};
+  $("loginHead").textContent = mode==="login" ? `Anmelden als ${m.name}` : mode==="change" ? "Passwort ändern" : (forced ? "Lege dein Passwort fest" : `Passwort für ${m.name} festlegen`);
+  $("loginHint").textContent = mode==="login" ? "Gib dein persönliches Passwort ein."
+    : mode==="change" ? "Gib dein aktuelles und dein neues Passwort ein."
+    : "Ab jetzt meldest du dich mit diesem Passwort an. So kann sich niemand als du ausgeben. Mindestens 4 Zeichen.";
+  $("loginPwOld").hidden = mode!=="change";
+  $("loginPw").placeholder = mode==="login" ? "Passwort" : "Neues Passwort";
+  $("loginPw2").hidden = mode==="login";
+  $("loginSubmit").textContent = mode==="login" ? "Anmelden" : "Speichern";
+  $("loginCancel").hidden = forced;
+  for (const f of ["loginPwOld","loginPw","loginPw2"]) $(f).value="";
+  $("loginOverlay").hidden=false; setTimeout(()=>$(mode==="change"?"loginPwOld":"loginPw").focus(),50);
+}
+function closeLogin(){ login=null; $("loginOverlay").hidden=true }
+$("loginForm").addEventListener("submit", async ev => { ev.preventDefault(); if(!login) return;
+  const L=login, m=memberOf(L.id); if(!m){ closeLogin(); return }
+  const p1=$("loginPw").value, p2=$("loginPw2").value;
+  if (L.mode==="login"){
+    if (await pwHash(p1, S.group, m.id)!==m.pwHash){ toast("Das Passwort stimmt nicht."); $("loginPw").select(); return }
+    closeLogin(); setMe(m.id); toast(`Willkommen zurück, ${m.name}!`); return;
+  }
+  if (L.mode==="change" && await pwHash($("loginPwOld").value, S.group, m.id)!==m.pwHash){ toast("Das aktuelle Passwort stimmt nicht."); return }
+  if (p1.length<4){ toast("Das Passwort braucht mindestens 4 Zeichen."); return }
+  if (p1!==p2){ toast("Die beiden Passwörter sind nicht gleich."); return }
+  const h=await pwHash(p1, S.group, m.id);
+  w(updateDoc(gref("members",m.id), {pwHash:h})); closeLogin();
+  if (S.me!==m.id) setMe(m.id);
+  toast(L.mode==="change" ? "Passwort geändert." : "Passwort gespeichert.");
+});
+// "Ich bin …": mit Passwort anmelden, oder (alte Mitglieder ohne Passwort) eins festlegen
+async function iAm(id){ const m=memberOf(id); if(!m) return;
+  if (m.pwHash) openLogin("login", id);
+  else if (await joinPwOk()) openLogin("set", id);
+}
 $("renameForm").addEventListener("submit", ev => { ev.preventDefault();
   const name=$("renameName").value.trim(); if(!name) return;
   w(updateDoc(gref("members",S.me), {name})); $("renameOverlay").hidden=true });
@@ -800,7 +868,12 @@ document.addEventListener("click", ev => {
     if (it.proposedBy!==S.me) push([it.proposedBy], "Abgelehnt", `${myName()} hat deinen Vorschlag „${it.title}“ abgelehnt.`); toast("Gelöscht.") }
   else if (act==="delEntry"){ w(deleteDoc(gref("entries",id))); toast("Eintrag entfernt.") }
   else if (act==="removeMember"){ if(!iAmMaster()||id===S.me) return; if(isMaster(id)&&masterIds().length<=1) return; closeMember(); w(deleteDoc(gref("members",id))); toast("Aus der Gruppe entfernt.") }
-  else if (act==="iam"){ joinPwOk().then(ok=>{ if(ok) setMe(id) }) }
+  else if (act==="iam") iAm(id);
+  else if (act==="loginCancel") closeLogin();
+  else if (act==="changePw") openLogin("change", S.me);
+  else if (act==="resetPw"){ if(!iAmMaster()||id===S.me) return; w(updateDoc(gref("members",id),{pwHash:null}));
+    toast(`Passwort von ${nameOf(id)} zurückgesetzt. Beim nächsten Anmelden legt ${nameOf(id)} ein neues fest.`);
+    push([id], "Passwort zurückgesetzt", `${myName()} hat dein Passwort zurückgesetzt. Lege in der App ein neues fest.`) }
   else if (act==="manage") openMember(id);
   else if (act==="memberClose") closeMember();
   else if (act==="pushOn"){ const topic="hp-"+rnd(20,"abcdefghijkmnpqrstuvwxyz23456789"); w(updateDoc(gref("members",S.me),{ntfy:topic})); toast("Push eingerichtet. Folge jetzt den Schritten.") }
@@ -868,7 +941,7 @@ bindForm("freeForm","freeTitle","freePoints",(t,p)=>{ const m=iAmMaster();
   w(setDoc(doc(gcol("entries")), entry));
   push(confirmersOf(entry), "Bitte bestätigen", `${myName()} hat „${t}“ erledigt und schlägt ${pts(p)} vor.`);
   toast(m ? `Gemeldet. Die ${p} Punkte zählen, sobald jemand bestätigt.` : `Gemeldet. ${masterNames()} prüft die Punkte und bestätigt.`) });
-document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); closeMember(); $("renameOverlay").hidden=true } });
+document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); closeMember(); if(login&&!login.forced) closeLogin(); $("renameOverlay").hidden=true } });
 
 /* ---------- Start ---------- */
 function boot(){
