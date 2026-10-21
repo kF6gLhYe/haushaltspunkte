@@ -94,7 +94,7 @@ form.add{display:flex;flex-direction:column;gap:10px}
 .fields{display:flex;gap:8px;flex-wrap:wrap}
 .fields input[type=text]{flex:1 1 180px;min-width:0}
 .fields input[type=number]{flex:0 0 90px;width:90px}
-input[type=text],input[type=number]{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px}
+input[type=text],input[type=number],input[type=password]{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px}
 input.code{font-family:var(--display);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:20px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:5px 10px;font-size:13px;color:var(--muted)}
@@ -146,9 +146,12 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       <input type="text" class="code" id="joinCode" placeholder="CODE" maxlength="9" autocomplete="off" autocapitalize="characters" required>
       <div><button class="btn primary" type="submit">Beitreten</button></div>
     </form>
-    <form class="card" id="createForm">
+    <button class="linkbtn" type="button" data-act="showCreate" id="showCreate">Neue Gruppe gründen</button>
+    <form class="card" id="createForm" hidden>
       <h3>Neue Gruppe gründen</h3>
+      <p class="muted small">Nur mit dem Gründungs-Passwort. Zum Mitmachen in einer bestehenden Gruppe brauchst du es nicht.</p>
       <input type="text" id="createName" placeholder="Dein Name" maxlength="24" required>
+      <input type="password" id="createPw" placeholder="Gründungs-Passwort" autocomplete="off" required>
       <div><button class="btn" type="submit">Gruppe gründen</button></div>
     </form>
   </div>
@@ -306,7 +309,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache,
-  doc, collection, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  doc, collection, getDocs, query, limit, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig } from "./config.js";
 
 const COLLS = ["members","tasks","rewards","entries","redemptions"];
@@ -511,24 +514,26 @@ function enterGroup(code){
 function setMe(id){ S.me=id; store.set("hp_member_"+S.group, id); route() }
 
 $("createForm").addEventListener("submit", async ev => { ev.preventDefault();
-  const name=$("createName").value.trim(); if(!name) return;
+  const name=$("createName").value.trim(), pw=$("createPw").value; if(!name||!pw) return;
   const btn=ev.submitter; if(btn) btn.disabled=true;
   try{
-    let code;
-    for (let i=0;i<5;i++){ code=rnd(8); const s=await getDoc(doc(fs,"groups",code)); if(!s.exists()) break }
-    await setDoc(doc(fs,"groups",code), {createdAt:Date.now()});
+    const code=rnd(8);
+    // Firebase prüft das Passwort in den Regeln. Ist es falsch, wird nichts angelegt.
+    await setDoc(doc(fs,"groups",code), {createdAt:Date.now(), pw});
+    $("createPw").value="";
     const mid = rnd(12, "abcdefghijkmnpqrstuvwxyz23456789");
     store.set("hp_member_"+code, mid);
     await setDoc(doc(fs,"groups",code,"members",mid), {name, joinedAt:Date.now()});
     enterGroup(code); setTab("history");
     toast("Gruppe gegründet. Lade jetzt jemanden ein.");
-  }catch(e){ console.error(e); toast(e.code==="permission-denied"?"Keine Berechtigung. Prüfe die Firestore-Regeln.":"Gründen hat nicht geklappt. Bist du online?") }
+  }catch(e){ console.error(e); toast(e.code==="permission-denied"?"Das Passwort stimmt nicht. Zum Mitmachen brauchst du nur den Gruppen-Code.":"Gründen hat nicht geklappt. Bist du online?") }
   finally{ if(btn) btn.disabled=false }
 });
 $("joinCodeForm").addEventListener("submit", async ev => { ev.preventDefault();
   const code=normCode($("joinCode").value); if(code.length!==8){ toast("Der Code hat 8 Zeichen, z. B. ABCD-EF23."); return }
-  try{ const s=await getDoc(doc(fs,"groups",code)); if(!s.exists()){ toast("Diese Gruppe gibt es nicht. Prüfe den Code."); return }
-    enterGroup(code) }catch(e){ console.error(e); toast("Beitreten hat nicht geklappt. Bist du online?") }
+  // Die Regeln geben Mitglieder nur heraus, wenn die Gruppe existiert.
+  try{ await getDocs(query(collection(fs,"groups",code,"members"), limit(1))); enterGroup(code) }
+  catch(e){ console.error(e); toast(e.code==="permission-denied"?"Diese Gruppe gibt es nicht. Prüfe den Code.":"Beitreten hat nicht geklappt. Bist du online?") }
 });
 $("whoNewForm").addEventListener("submit", ev => { ev.preventDefault();
   const name=$("whoName").value.trim(); if(!name) return;
@@ -576,6 +581,7 @@ document.addEventListener("click", ev => {
   else if (act==="delEntry"){ w(deleteDoc(gref("entries",id))); toast("Eintrag entfernt.") }
   else if (act==="removeMember"){ w(deleteDoc(gref("members",id))); toast("Aus der Gruppe entfernt.") }
   else if (act==="iam") setMe(id);
+  else if (act==="showCreate"){ $("createForm").hidden=false; $("showCreate").hidden=true; $("createName").focus() }
   else if (act==="leave"){ enterGroup(null) }
   else if (act==="rename"){ $("renameName").value=nameOf(S.me); $("renameOverlay").hidden=false; $("renameName").focus() }
   else if (act==="renameCancel") $("renameOverlay").hidden=true;
