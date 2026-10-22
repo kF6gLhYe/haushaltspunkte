@@ -138,6 +138,9 @@ input.code{font-family:var(--display);font-weight:800;letter-spacing:.12em;text-
 .todo .row{background:var(--surface);flex-wrap:wrap}
 .todo .row .actions{flex:1 1 100%}
 .step{font-size:12px;font-weight:700;color:var(--gold)}
+.sheet.privacy{max-height:88vh;overflow-y:auto;gap:10px;line-height:1.5}
+.sheet.privacy h3{margin-top:6px}
+.sheet.privacy ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
 .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .toggle:last-child{border-bottom:0}
 .toggle input{width:22px;height:22px;accent-color:var(--accent);flex:none}
@@ -172,6 +175,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
     <button class="mebtn" id="meChip" data-act="profile" aria-label="Mein Profil"></button>
   </div>
   <div id="status" class="note" hidden></div>
+  <button class="note" id="updateBar" data-act="reload" hidden style="border:0;text-align:left;font-weight:700;cursor:pointer">Neue Version der Kakaokasse da. Tippen zum Laden.</button>
 
   <!-- START: Gruppe gründen oder beitreten -->
   <div id="screenStart" class="stack" hidden>
@@ -343,6 +347,11 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
         <div><button class="btn ghost danger" data-act="leave" data-confirm="Wirklich abmelden?">Auf diesem Handy abmelden</button></div>
         <p class="muted small">Abmelden löscht nichts. Du kannst später mit dem Code wieder beitreten und dich als dieselbe Person auswählen.</p>
       </section>
+      <section class="card">
+        <h3>Datenschutz</h3>
+        <p class="muted small">Wer sieht hier eigentlich was? Die ehrliche Antwort, mit Kakao.</p>
+        <div><button class="btn" data-act="privacy">Datenschutz lesen</button></div>
+      </section>
     </div>
   </div>
 </div>
@@ -354,6 +363,41 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
   <button data-tab="history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>Verlauf</button>
   <button data-tab="group"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5c2.6.2 4.4 1.9 5 4.5"/></svg>Gruppe</button>
 </div></nav>
+
+<div class="overlay" id="privacyOverlay" hidden>
+  <div class="sheet privacy" role="dialog" aria-labelledby="privacyHead">
+    <h2 id="privacyHead">Datenschutz in der Kakaokasse</h2>
+    <p class="label">Stand: Oktober 2026 · Rechtsgrundlage: Vertrauen</p>
+    <p>Kurz gesagt: Hier herrscht <b>Kakaokratie</b>. Die Master regieren, alle anderen wischen.</p>
+
+    <h3>Was alle in der Gruppe sehen</h3>
+    <p>Alles. Wer wann staubgesaugt hat, wer den Müll vergessen hat und wer sich auffällig oft Kakao gönnt. Geheimnisse gibt es hier nicht, nur offene Punkte.</p>
+
+    <h3>Was Master sehen und dürfen</h3>
+    <p>Ja, wirklich alles. Master geben Aufgaben frei, vergeben Plus- und Minuspunkte, verteilen und entziehen Rechte und entfernen Mitglieder. Ein Master ist eine Art Hausmeister mit Krone.</p>
+
+    <h3>Was selbst Master nicht können</h3>
+    <ul>
+      <li>Dein Passwort sehen. Gespeichert ist nur ein unlesbarer Fingerabdruck davon.</li>
+      <li>Deinen Namen oder dein Profilbild ändern. Das bist du.</li>
+      <li>Kakao herbeizaubern. Dafür braucht es weiterhin jemanden mit Topf.</li>
+    </ul>
+
+    <h3>Wo die Daten liegen</h3>
+    <ul>
+      <li><b>Punkte, Aufgaben, Namen:</b> in einer Datenbank bei Google Firebase.</li>
+      <li><b>Push-Nachrichten:</b> laufen über ntfy.sh, mit Name und Aufgabe im Text.</li>
+      <li><b>Auf deinem Handy:</b> nur, in welchen Gruppen du angemeldet bist.</li>
+      <li><b>Schriftarten:</b> kommen von Google Fonts.</li>
+    </ul>
+    <p>Keine Werbung, kein Tracking, kein Verkauf deiner Daten. Wer würde auch für „Spülmaschine ausgeräumt“ bezahlen?</p>
+
+    <h3>Deine Rechte</h3>
+    <p>Beschwerden bitte schriftlich auf einer Serviette einreichen, zusammen mit einem Kakao. Ernsthaft: Wenn du raus willst, sag einem Master Bescheid. Dein Eintrag in der Gruppe verschwindet dann. Was du erledigt hast, bleibt als Heldentat im Verlauf stehen.</p>
+
+    <div class="btns"><button class="btn primary" type="button" data-act="privacyClose">Verstanden, ich vertraue euch</button></div>
+  </div>
+</div>
 
 <div class="overlay" id="profileOverlay" hidden>
   <div class="sheet">
@@ -869,20 +913,52 @@ function enterGroup(code){
   if (code) store.set("hp_group", code); else store.del("hp_group");
   route();
   if (!code) return;
+  subscribe();
+}
+// Live-Verbindung zur Datenbank (neu) aufbauen. Wird auch beim Zurückkehren in die App aufgerufen,
+// weil Handys die Verbindung im Hintergrund oft kappen und sie dann nicht immer von selbst zurückkommt.
+let subGen = 0, connErr = false;
+function subscribe(){
+  for (const u of unsubs) u(); unsubs=[];
+  if (!S.group) return;
+  const gen = ++subGen;
   for (const c of COLLS){
+    let first = true; // erster Stand nach (Neu-)Verbindung: keine Meldungen für alte Einträge
     unsubs.push(onSnapshot(gcol(c), snap => {
-      if (S.ready[c] && S.me){
+      if (gen!==subGen) return;
+      if (!first && S.ready[c] && S.me){
         if (c==="redemptions") notifyRedemptions(snap);
         else if (c==="entries") notifyEntries(snap);
         else if (c==="tasks"||c==="rewards") notifyItems(snap, c);
       }
+      first = false;
+      if (connErr){ connErr=false; showStatus("") }
       let docs = snap.docs.map(d=>({id:d.id, ...d.data()}));
       if (c==="members"){ S.groupInfo = docs.find(d=>d.id==="_group") || {}; docs = docs.filter(d=>!d.id.startsWith("_")) }
-      S[c] = docs; S.ready[c]=true; route();
-    }, err => { console.error(err);
-      showStatus(err.code==="permission-denied" ? "Kein Zugriff auf die Datenbank. Prüfe die Firestore-Regeln (siehe Anleitung)." : "Verbindung unterbrochen. Lade die Seite neu.") }));
+      S[c] = docs; S.ready[c]=true;
+      try { route() } catch(e){ console.error(e); showStatus("Anzeigefehler: "+(e && e.message || e)+". Bitte die App neu laden.") }
+    }, err => { if (gen!==subGen) return; console.error(err); connErr=true;
+      showStatus(err.code==="permission-denied" ? "Kein Zugriff auf die Datenbank. Prüfe die Firestore-Regeln (siehe Anleitung)." : "Verbindung unterbrochen. Sie wird automatisch neu aufgebaut, sobald du wieder online bist.") }));
   }
 }
+
+/* ---------- Aktuell bleiben ---------- */
+let hiddenAt = 0, lastResync = 0;
+function resync(){ const now=Date.now(); if (!S.group || now-lastResync<3000) return; lastResync=now; subscribe(); checkVersion() }
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden){ hiddenAt=Date.now(); return }
+  if (Date.now()-hiddenAt > 5000) resync();   // länger als 5 s weg: neu verbinden
+});
+window.addEventListener("online", resync);
+window.addEventListener("pageshow", e => { if (e.persisted) resync() });
+// Neue App-Version auf GitHub erkennen
+let baseVersion = null;
+async function pageHash(){ const t=await fetch("index.html?v="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null); return t ? sha(t) : null }
+async function checkVersion(){ try{
+  const h=await pageHash(); if(!h) return;
+  if (!baseVersion){ baseVersion=h; return }
+  if (h!==baseVersion) $("updateBar").hidden=false;
+}catch(e){} }
 function setMe(id){ S.me=id; store.set("hp_member_"+S.group, id); route() }
 
 $("createForm").addEventListener("submit", async ev => { ev.preventDefault();
@@ -1044,6 +1120,9 @@ document.addEventListener("click", ev => {
     const rest=myGroups().filter(c=>c!==cur); saveGroups(rest); enterGroup(rest[0]||null); toast(rest.length?`Abgemeldet. Jetzt geöffnet: ${groupLabel(rest[0])}.`:"Abgemeldet.") }
   else if (act==="switchGroup"){ if(id!==S.group){ enterGroup(id); setTab("collect"); toast(`${groupLabel(id)} geöffnet.`) } }
   else if (act==="groupRename"){ openGroupRename() }
+  else if (act==="reload"){ location.reload() }
+  else if (act==="privacy"){ $("privacyOverlay").hidden=false; $("privacyOverlay").querySelector(".sheet").scrollTop=0 }
+  else if (act==="privacyClose"){ $("privacyOverlay").hidden=true }
   else if (act==="profile"){ if(S.me && memberOf(S.me)){ $("profileOverlay").hidden=false; renderProfile() } }
   else if (act==="profileClose"){ $("profileOverlay").hidden=true }
   else if (act==="pickIcon"){ const v=b.dataset.v||null; w(updateDoc(gref("members",S.me),{icon:v})); patchMe({icon:v}) }
@@ -1112,10 +1191,11 @@ bindForm("freeForm","freeTitle","freePoints",(t,p)=>{ const m=iAmMaster();
   w(setDoc(doc(gcol("entries")), entry));
   push(confirmersOf(entry), "Bitte bestätigen", `${myName()} hat „${t}“ erledigt und schlägt ${pts(p)} vor.`);
   toast(m ? `Gemeldet. ${pts(p)} zählen, sobald jemand bestätigt.` : `Gemeldet. ${masterNames()} prüft die Punkte und bestätigt.`) });
-document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); closeMember(); $("groupRenameOverlay").hidden=true; $("profileOverlay").hidden=true; if(login&&!login.forced) closeLogin(); $("renameOverlay").hidden=true } });
+document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); closeMember(); $("groupRenameOverlay").hidden=true; $("profileOverlay").hidden=true; $("privacyOverlay").hidden=true; if(login&&!login.forced) closeLogin(); $("renameOverlay").hidden=true } });
 
 /* ---------- Start ---------- */
 function boot(){
+  checkVersion(); setInterval(()=>{ if(!document.hidden) checkVersion() }, 10*60*1000);
   const t=store.get("hp_tab"); if(t) setTab(t);
   if (!firebaseConfig || !firebaseConfig.apiKey || String(firebaseConfig.apiKey).includes("HIER")){
     showStatus("Firebase ist noch nicht eingerichtet. Trage deine Firebase-Daten in config.js ein (siehe ANLEITUNG.md)."); return }
