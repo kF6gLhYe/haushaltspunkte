@@ -613,8 +613,13 @@ function notifyItems(snap, coll){
 }
 
 /* ---------- Master trägt für andere ein ---------- */
-// Eigene Einträge, selbst angelegte und (für Master) alle Einträge darf man entfernen
-function mayDelete(e){ return e.uid===S.me || e.createdBy===S.me || iAmMaster() }
+// Wer darf einen Eintrag entfernen?
+// Master: alles. Alle anderen: nur eigene, selbst gemeldete Einträge, solange sie noch nicht bestätigt sind.
+// Abzüge oder Punkte, die ein Master für jemanden eingetragen hat, kann die Person also nicht selbst löschen.
+function mayDelete(e){
+  if (iAmMaster()) return true;
+  return e.uid===S.me && !entryActive(e) && (!e.createdBy || e.createdBy===S.me);
+}
 function openFor(taskId){ const t=find("tasks",taskId); if(!t||!iAmMaster()) return;
   $("forHead").textContent = `„${t.title}“ für wen?`;
   $("forHint").textContent = `${pts(t.points)}. Als Master trägst du das direkt ein, es zählt sofort. Die Person bekommt eine Nachricht.`;
@@ -712,7 +717,7 @@ function render(){
     if (ok) btns = `<button class="btn ghost danger" data-act="rejectEntry" data-id="${e.id}" data-confirm="Wirklich ablehnen?">Ablehnen</button>`
       + (e.kind==="free"&&master?`<button class="btn ghost" data-act="counter" data-coll="entries" data-id="${e.id}">Anderer Wert</button>`:"")
       + `<button class="btn primary" data-act="confirmEntry" data-id="${e.id}">Bestätigen</button>`;
-    else if (own) btns = `<button class="btn ghost danger" data-act="delEntry" data-id="${e.id}" data-confirm="Zurückziehen?">Zurückziehen</button>`;
+    else if (own && mayDelete(e)) btns = `<button class="btn ghost danger" data-act="delEntry" data-id="${e.id}" data-confirm="Zurückziehen?">Zurückziehen</button>`;
     return `<div class="row pending">${av(e.uid)}
       <span class="main" style="flex:1 1 160px"><span class="pill">${e.kind==="free"?"Freitext":"Aufgabe"}</span><span class="t">${esc(e.title)}</span>
       <span class="s">${own?"Du hast":esc(nameOf(e.uid))+" hat"} das erledigt · ${when(e.at)}${ok?"":" · "+esc(entryWaitText(e))}</span></span>
