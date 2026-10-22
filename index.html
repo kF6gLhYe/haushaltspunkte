@@ -140,7 +140,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 <body class="noTabs">
 <div class="wrap">
   <div class="top">
-    <div style="min-width:0"><h1>Haushaltspunkte</h1><button class="label linkbtn" id="groupName" data-tab="group" hidden style="padding:0"></button></div>
+    <div style="min-width:0"><h1>Haushaltspunkte</h1><button class="label linkbtn" id="groupName" data-act="groupNameTap" hidden style="padding:0"></button></div>
     <div class="me" id="meChip"></div>
   </div>
   <div id="status" class="note" hidden></div>
@@ -324,6 +324,15 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
   <button data-tab="history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>Verlauf</button>
   <button data-tab="group"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5c2.6.2 4.4 1.9 5 4.5"/></svg>Gruppe</button>
 </div></nav>
+
+<div class="overlay" id="groupRenameOverlay" hidden>
+  <form class="sheet" id="groupRenameForm">
+    <h2>Gruppe umbenennen</h2>
+    <p class="muted small">Der neue Name erscheint bei allen Mitgliedern oben in der App und in „Meine Gruppen“.</p>
+    <input type="text" id="groupRenameInput" maxlength="40" placeholder="z. B. Unsere Wohnung">
+    <div class="btns"><button class="btn ghost" type="button" data-act="groupRenameCancel">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div>
+  </form>
+</div>
 
 <div class="overlay" id="forOverlay" hidden>
   <div class="sheet">
@@ -669,7 +678,8 @@ function render(){
   $("rewardForm").querySelector("button[type=submit]").textContent = master ? "Anlegen" : "Vorschlagen";
   // Gruppenname & Verwaltung
   const gname = S.groupInfo.name || "";
-  $("groupName").textContent = gname; $("groupName").hidden = !gname;
+  $("groupName").textContent = (gname || (master ? "Gruppe benennen" : "")) + (master ? " ✎" : "");
+  $("groupName").hidden = !gname && !master;
   $("settingsCard").hidden = !master;
   if (master){
     if (document.activeElement!==$("groupNameInput")) $("groupNameInput").value = gname;
@@ -747,8 +757,14 @@ document.addEventListener("change", ev => {
 /* ---------- Gruppe verwalten ---------- */
 async function sha(text){ const b=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("") }
 const groupDoc = () => gref("members","_group"); // Gruppen-Einstellungen liegen als Sonderdokument bei den Mitgliedern
-$("groupNameForm").addEventListener("submit", ev => { ev.preventDefault(); if(!iAmMaster()) return;
-  const name=$("groupNameInput").value.trim(); w(setDoc(groupDoc(), {name}, {merge:true})); $("groupNameInput").blur(); toast(name?"Gruppenname gespeichert.":"Gruppenname entfernt.") });
+function saveGroupName(raw){ if(!iAmMaster()){ toast("Nur Master können die Gruppe umbenennen."); return }
+  const name=String(raw||"").trim().slice(0,40);
+  w(setDoc(groupDoc(), {name}, {merge:true}));
+  if (name) store.set("hp_gname_"+S.group, name); else store.del("hp_gname_"+S.group);
+  renderGroupLists(); toast(name?`Gruppe heißt jetzt „${name}“.`:"Gruppenname entfernt.") }
+function openGroupRename(){ if(!iAmMaster()) return; $("groupRenameInput").value=S.groupInfo.name||""; $("groupRenameOverlay").hidden=false; setTimeout(()=>$("groupRenameInput").focus(),50) }
+$("groupRenameForm").addEventListener("submit", ev => { ev.preventDefault(); $("groupRenameOverlay").hidden=true; saveGroupName($("groupRenameInput").value) });
+$("groupNameForm").addEventListener("submit", ev => { ev.preventDefault(); $("groupNameInput").blur(); saveGroupName($("groupNameInput").value) });
 $("joinPwForm").addEventListener("submit", async ev => { ev.preventDefault(); if(!iAmMaster()) return;
   const pw=$("joinPwInput").value; if(pw.length<4){ toast("Bitte mindestens 4 Zeichen."); return }
   const joinPwHash = await sha(pw+"|"+S.group);
@@ -772,7 +788,7 @@ const groupLabel = c => store.get("hp_gname_"+c) || ("Gruppe "+fmtCode(c));
 function renderGroupLists(){
   const gs = myGroups();
   $("groupList").innerHTML = gs.map(c=>`<div class="row"><span class="main"><span class="t">${esc(groupLabel(c))}</span><span class="s">Code ${fmtCode(c)}</span></span>
-    ${c===S.group?`<span class="pill">geöffnet</span>`:`<button class="btn primary" data-act="switchGroup" data-id="${c}">Öffnen</button>`}</div>`).join("");
+    ${c===S.group?`<span class="actions"><span class="pill" style="align-self:center">geöffnet</span>${iAmMaster()?`<button class="btn ghost" data-act="groupRename">Umbenennen</button>`:""}</span>`:`<button class="btn primary" data-act="switchGroup" data-id="${c}">Öffnen</button>`}</div>`).join("");
   $("startGroups").hidden = !gs.length;
   $("startGroupList").innerHTML = gs.map(c=>`<button class="row" data-act="switchGroup" data-id="${c}"><span class="main"><span class="t">${esc(groupLabel(c))}</span><span class="s">Code ${fmtCode(c)} · öffnen</span></span></button>`).join("");
 }
@@ -958,6 +974,9 @@ document.addEventListener("click", ev => {
   else if (act==="leave"){ const cur=S.group; store.del("hp_member_"+cur); store.del("hp_gname_"+cur);
     const rest=myGroups().filter(c=>c!==cur); saveGroups(rest); enterGroup(rest[0]||null); toast(rest.length?`Abgemeldet. Jetzt geöffnet: ${groupLabel(rest[0])}.`:"Abgemeldet.") }
   else if (act==="switchGroup"){ if(id!==S.group){ enterGroup(id); setTab("collect"); toast(`${groupLabel(id)} geöffnet.`) } }
+  else if (act==="groupRename"){ openGroupRename() }
+  else if (act==="groupRenameCancel"){ $("groupRenameOverlay").hidden=true }
+  else if (act==="groupNameTap"){ if (iAmMaster()) openGroupRename(); else setTab("group") }
   else if (act==="addGroup"){ enterGroup(null); window.scrollTo(0,0) }
   else if (act==="rename"){ $("renameName").value=nameOf(S.me); $("renameOverlay").hidden=false; $("renameName").focus() }
   else if (act==="renameCancel") $("renameOverlay").hidden=true;
@@ -1020,7 +1039,7 @@ bindForm("freeForm","freeTitle","freePoints",(t,p)=>{ const m=iAmMaster();
   w(setDoc(doc(gcol("entries")), entry));
   push(confirmersOf(entry), "Bitte bestätigen", `${myName()} hat „${t}“ erledigt und schlägt ${pts(p)} vor.`);
   toast(m ? `Gemeldet. ${pts(p)} zählen, sobald jemand bestätigt.` : `Gemeldet. ${masterNames()} prüft die Punkte und bestätigt.`) });
-document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); closeMember(); if(login&&!login.forced) closeLogin(); $("renameOverlay").hidden=true } });
+document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); closeMember(); $("groupRenameOverlay").hidden=true; if(login&&!login.forced) closeLogin(); $("renameOverlay").hidden=true } });
 
 /* ---------- Start ---------- */
 function boot(){
