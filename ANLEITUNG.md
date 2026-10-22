@@ -53,6 +53,11 @@ Damit bekommt jedes Handy unsichtbar eine Geräte-ID. Niemand muss sich registri
 3. In ntfy auf **+** tippen und das angezeigte Thema eintragen (Server: ntfy.sh). Mit **Test senden** prüfen.
 Das Thema ist dein persönlicher Kanal. Gib es nicht weiter.
 
+## Archiv
+- Abgeschlossene Einträge, die älter als 60 Tage sind, fasst die App automatisch pro Person zu einem **Übertrag** zusammen. Die Einzelheiten wandern ins Archiv: **Verlauf → Älteren Verlauf laden**.
+- Der Kontostand bleibt dabei exakt gleich. So bleibt die App auch nach Jahren schnell und innerhalb der kostenlosen Grenzen.
+- Dafür muss in den Firestore-Regeln `'archive'` in der Liste der erlaubten Sammlungen stehen (siehe `firestore.rules`).
+
 ## Gut zu wissen
 - **Handy gewechselt oder Browserdaten gelöscht?** Mit dem Code wieder beitreten, auf „Ich bin …“ tippen und mit dem persönlichen Passwort anmelden. Es geht nichts verloren.
 - **Persönliches Passwort:** Jede Person legt beim Beitreten ein eigenes Passwort fest. Ändern unter **Gruppe → Mitglieder → Passwort ändern**. Vergessen? Ein Master kann es unter **Verwalten** zurücksetzen.

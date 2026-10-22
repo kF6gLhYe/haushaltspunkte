@@ -309,6 +309,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       <section>
         <div class="sechead"><h2>Verlauf</h2><span class="label">Neueste zuerst</span></div>
         <div class="list" id="history"></div>
+        <div id="archiveBox"></div>
       </section>
     </div>
     <div data-view="group" class="view stack" hidden>
@@ -483,7 +484,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initializeFirestore, memoryLocalCache,
-  doc, collection, getDocs, query, limit, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+  doc, collection, getDocs, query, limit, setDoc, updateDoc, deleteDoc, onSnapshot,
+  runTransaction, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig } from "./config.js";
 
 const COLLS = ["members","tasks","rewards","entries","redemptions"];
@@ -548,7 +550,8 @@ function entryWaitText(e){
   return `wartet auf ${c.map(nameOf).join(" oder ")}${e.pointsOk!==true?" (Punkte prüfen)":""}`;
 }
 const pendingFor = taskId => S.entries.filter(e=>e.taskId===taskId && e.uid===S.me && !entryActive(e)).length;
-function balance(uid){ let b=0,p=0;
+// Kontostand = Übertrag aus dem Archiv + bestätigte aktuelle Einträge − aktuelle Einlösungen
+function balance(uid){ const m=memberOf(uid); let b=(m&&m.carry)||0, p=0;
   for (const e of S.entries){ if (e.uid!==uid) continue; if (entryActive(e)) b+=e.points||0; else p+=e.points||0 }
   for (const r of S.redemptions){ if (r.uid===uid) b-=r.cost||0 }
   return {b,p} }
@@ -662,6 +665,7 @@ function route(){
   if (!S._migrated && !S.members.some(m=>m.role==="master") && masterIds()[0]===S.me){ S._migrated=true; w(updateDoc(gref("members",S.me),{role:"master"})) }
   if (S.groupInfo.name) store.set("hp_gname_"+S.group, S.groupInfo.name); else store.del("hp_gname_"+S.group);
   show("screenApp"); render(); renderGroupLists();
+  if (!archiving) setTimeout(maybeArchive, 3000);
   if (!meM.pwHash && !login) openLogin("set", S.me, true);
 }
 
@@ -746,14 +750,10 @@ function render(){
     + `<div class="sechead"><h3>Neue Aufgaben &amp; Belohnungen</h3><span class="label">${items.length}</span></div>`
     + (itemHtml || `<div class="empty">Keine offenen Vorschläge.</div>`);
   // Verlauf
-  const hist = [...S.entries.map(e=>({...e,h:"e"})), ...S.redemptions.map(r=>({...r,h:"r"}))].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,100);
-  $("history").innerHTML = hist.length ? hist.map(x=>{
-    const val = x.h==="e" ? `<span class="${valClass(x.points)}">${sgn(x.points)}</span>` : `<span class="minus">−${x.cost}</span>`;
-    const st = x.h==="e" ? (!entryActive(x)?` · <span class="pill">wartet auf Bestätigung</span>`:(x.confirmedBy?` · bestätigt von ${esc(nameOf(x.confirmedBy))}`:"")) : (redStatus(x)==="fulfilled"?` · erfüllt${x.claimedBy?" von "+esc(nameOf(x.claimedBy)):""}`:" · eingelöst, offen");
-    const del = x.h==="e"&&mayDelete(x) ? `<button class="btn ghost danger" data-act="delEntry" data-id="${x.id}" data-confirm="Löschen?">Entfernen</button>` : "";
-    const by = x.h==="e"&&x.createdBy&&x.createdBy!==x.uid ? ` · eingetragen von ${esc(nameOf(x.createdBy))}` : "";
-    return `<div class="row">${av(x.uid)}<span class="main"><span class="t">${esc(x.title)}</span><span class="s">${esc(nameOf(x.uid))} · ${when(x.at)}${by}${by?"":st}</span></span>${val}${del}</div>` }).join("")
+  const hist = [...S.entries.map(e=>({...e,h:"e"})), ...S.redemptions.map(r=>({...r,h:"r"}))].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,150);
+  $("history").innerHTML = hist.length ? hist.map(x=>histRow(x,false)).join("")
     : `<div class="empty">Noch nichts passiert. Tippe unter „Sammeln“ auf eine erledigte Aufgabe.</div>`;
+  renderArchive();
   // Rangliste nach Kontostand; Gleichstand teilt sich den Platz
   const ranked = S.members.map(m=>({m, ...balance(m.id)})).sort((a,b)=>(b.b-a.b)||((a.m.joinedAt||0)-(b.m.joinedAt||0)));
   const top = Math.max(1, ...ranked.map(r=>r.b));
@@ -892,6 +892,13 @@ async function joinPwOk(){
   const v=$("whoPw").value; if(!v){ toast("Bitte gib das Beitritts-Passwort ein."); $("whoPw").focus(); return false }
   if (await sha(v+"|"+S.group)!==h){ toast("Das Passwort stimmt nicht."); return false }
   $("whoPw").value=""; return true }
+function histRow(x, archived){
+  const val = x.h==="e" ? `<span class="${valClass(x.points)}">${sgn(x.points)}</span>` : `<span class="minus">−${x.cost}</span>`;
+  const st = x.h==="e" ? (!entryActive(x)?` · <span class="pill">wartet auf Bestätigung</span>`:(x.confirmedBy?` · bestätigt von ${esc(nameOf(x.confirmedBy))}`:"")) : (redStatus(x)==="fulfilled"?` · erfüllt${x.claimedBy?" von "+esc(nameOf(x.claimedBy)):""}`:" · eingelöst, offen");
+  const del = !archived && x.h==="e" && mayDelete(x) ? `<button class="btn ghost danger" data-act="delEntry" data-id="${x.id}" data-confirm="Löschen?">Entfernen</button>` : "";
+  const by = x.h==="e"&&x.createdBy&&x.createdBy!==x.uid ? ` · eingetragen von ${esc(nameOf(x.createdBy))}` : "";
+  return `<div class="row">${av(x.uid)}<span class="main"><span class="t">${esc(x.title)}</span><span class="s">${esc(nameOf(x.uid))} · ${when(x.at)}${by}${by?"":st}</span></span>${val}${del}</div>`;
+}
 function inviteUrl(){ const u = new URL(location.href); u.search = "?g="+S.group; u.hash=""; return u.toString() }
 
 function setTab(t){ S.tab=t; $("balances").hidden = t==="group"; document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.view!==t);
@@ -913,7 +920,7 @@ function renderGroupLists(){
 function enterGroup(code){
   if (code) saveGroups([...myGroups(), code]);
   for (const u of unsubs) u(); unsubs=[];
-  S.group=code; S.ready={}; S.groupInfo={}; S._migrated=false; for (const c of COLLS) S[c]=[];
+  archiveData=null; S.group=code; S.ready={}; S.groupInfo={}; S._migrated=false; for (const c of COLLS) S[c]=[];
   S.me = code ? store.get("hp_member_"+code) : null;
   if (code) store.set("hp_group", code); else store.del("hp_group");
   route();
@@ -947,12 +954,83 @@ function subscribe(){
   }
 }
 
+/* ---------- Archiv: Kilometerstand + aktuelles Fahrtenbuch ---------- */
+// Abgeschlossene Einträge und erfüllte Einlösungen, die älter als ARCHIVE_DAYS sind, werden pro Person
+// zu einem Übertrag (members/<id>.carry) zusammengefasst. Die Einzelheiten wandern in archive/<Monat>.
+// So liest die App beim Verbinden nur die letzten Wochen statt der ganzen Historie.
+const ARCHIVE_DAYS = 60;
+const monthKey = t => { const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0") };
+// Reine Rechenfunktion: was soll archiviert werden? (ohne Datenbank, gut testbar)
+function archivePlan(entries, redemptions, now=Date.now()){
+  const cut = now - ARCHIVE_DAYS*864e5;
+  const items = [
+    ...entries.filter(e=>entryActive(e) && (e.at||0)<cut).map(e=>({coll:"entries", id:e.id, uid:e.uid, delta:+(e.points||0), rec:{...e, h:"e"}})),
+    ...redemptions.filter(r=>redStatus(r)==="fulfilled" && (r.at||0)<cut).map(r=>({coll:"redemptions", id:r.id, uid:r.uid, delta:-(r.cost||0), rec:{...r, h:"r"}})),
+  ];
+  return { cut, items };
+}
+let archiving = false;
+async function maybeArchive(){
+  if (archiving || !S.group || !S.me || !S.ready.entries || !S.ready.redemptions || !S.ready.members) return;
+  const key = "hp_arch_"+S.group, last = +(store.get(key)||0);
+  if (Date.now()-last < 12*3600e3) return;           // höchstens alle 12 Stunden pro Handy
+  const { items } = archivePlan(S.entries, S.redemptions);
+  store.set(key, String(Date.now()));
+  if (!items.length) return;
+  archiving = true;
+  const memberIds = new Set(S.members.map(m=>m.id));
+  try{
+    for (let i=0; i<items.length; i+=120){                // Firestore: max. 500 Schreibvorgänge pro Transaktion
+      const chunk = items.slice(i, i+120);
+      await runTransaction(fs, async tx => {
+        // 1) Lesen: gibt es die Einträge noch? (Falls ein anderes Handy schneller war, überspringen)
+        const snaps = await Promise.all(chunk.map(it=>tx.get(gref(it.coll, it.id))));
+        const live = chunk.filter((it,k)=>snaps[k].exists());
+        if (!live.length) return;
+        const byMonth = {}, byMember = {};
+        for (const it of live){
+          const {id, ...rest} = it.rec; const mk = monthKey(it.rec.at||0);
+          (byMonth[mk] = byMonth[mk] || []).push({...rest, id});
+          if (memberIds.has(it.uid)) byMember[it.uid] = (byMember[it.uid]||0) + it.delta;
+        }
+        // 2) Schreiben: Übertrag erhöhen, ins Archiv legen, aus der Live-Liste löschen – alles oder nichts
+        for (const [uid, d] of Object.entries(byMember)) tx.update(gref("members", uid), {carry: increment(d), carryUntil: Date.now()});
+        for (const [mk, arr] of Object.entries(byMonth)) tx.set(gref("archive", mk), {items: arrayUnion(...arr)}, {merge:true});
+        for (const it of live) tx.delete(gref(it.coll, it.id));
+      });
+    }
+  }catch(e){ console.error(e);
+    store.del(key);
+    if (e && e.code==="permission-denied" && iAmMaster()) showStatus("Das Archiv braucht eine kleine Ergänzung in den Firestore-Regeln: 'archive' in die Liste der erlaubten Sammlungen aufnehmen (siehe Anleitung).");
+  } finally { archiving = false }
+}
+// Älteren Verlauf nur auf Knopfdruck laden
+let archiveData = null, archiveLoading = false;
+function renderArchive(){
+  const anyCarry = S.members.some(m=>m.carry);
+  if (!archiveData){
+    $("archiveBox").innerHTML = anyCarry ? `<div style="margin-top:8px"><button class="btn" data-act="loadArchive" ${archiveLoading?"disabled":""}>${archiveLoading?"Lade …":"Älteren Verlauf laden"}</button>
+      <p class="muted small" style="margin-top:6px">Einträge älter als ${ARCHIVE_DAYS} Tage sind im Archiv. Ihre Punkte stecken schon im Kontostand.</p></div>` : "";
+    return;
+  }
+  const rows = archiveData.slice().sort((a,b)=>(b.at||0)-(a.at||0));
+  $("archiveBox").innerHTML = `<div class="sechead" style="margin-top:12px"><h3>Archiv</h3><span class="label">${rows.length} Einträge</span></div>
+    <div class="list">${rows.length ? rows.map(x=>histRow(x,true)).join("") : `<div class="empty">Das Archiv ist leer.</div>`}</div>`;
+}
+async function loadArchive(){
+  archiveLoading = true; renderArchive();
+  try{ const snap = await timeout(getDocs(gcol("archive")));
+    archiveData = snap.docs.flatMap(d => (d.data().items||[]));
+  }catch(e){ console.error(e); toast("Archiv konnte nicht geladen werden.") }
+  archiveLoading = false; renderArchive();
+}
+
 /* ---------- Aktuell bleiben ---------- */
 let hiddenAt = 0, lastResync = 0;
 function resync(){ const now=Date.now(); if (!S.group || now-lastResync<3000) return; lastResync=now; subscribe(); checkVersion() }
 document.addEventListener("visibilitychange", () => {
   if (document.hidden){ hiddenAt=Date.now(); return }
-  if (Date.now()-hiddenAt > 5000) resync();   // länger als 5 s weg: neu verbinden
+  if (Date.now()-hiddenAt > 60000) resync();  // länger als 1 Minute weg: neu verbinden (kürzer kostet nur Lesezugriffe)
 });
 window.addEventListener("online", resync);
 window.addEventListener("pageshow", e => { if (e.persisted) resync() });
@@ -1126,6 +1204,7 @@ document.addEventListener("click", ev => {
   else if (act==="switchGroup"){ if(id!==S.group){ enterGroup(id); setTab("collect"); toast(`${groupLabel(id)} geöffnet.`) } }
   else if (act==="groupRename"){ openGroupRename() }
   else if (act==="reload"){ location.reload() }
+  else if (act==="loadArchive"){ loadArchive() }
   else if (act==="privacy"){ $("privacyOverlay").hidden=false; $("privacyOverlay").querySelector(".sheet").scrollTop=0 }
   else if (act==="privacyClose"){ $("privacyOverlay").hidden=true }
   else if (act==="profile"){ if(S.me && memberOf(S.me)){ $("profileOverlay").hidden=false; renderProfile() } }
