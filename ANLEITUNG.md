@@ -1,4 +1,4 @@
-# Haushaltspunkte einrichten
+# Kakaokasse einrichten
 
 Einmalig etwa 15 Minuten. Danach braucht niemand ein Konto: Die anderen öffnen einfach den Einladungslink.
 Alles läuft im kostenlosen Tarif von Firebase („Spark“) und auf GitHub Pages. Eine Kreditkarte braucht ihr nicht.
@@ -39,10 +39,23 @@ Damit bekommt jedes Handy unsichtbar eine Geräte-ID. Niemand muss sich registri
 1. Öffne die Adresse auf deinem Handy.
 2. **Tipp:** Füge die Seite zuerst zum Home-Bildschirm hinzu (iPhone: Teilen → „Zum Home-Bildschirm“; Android: Menü → „App installieren“) und öffne sie von dort. Auf dem iPhone merkt sich die Home-Bildschirm-App ihre Gruppe getrennt von Safari.
 3. „Neue Gruppe gründen“ → deinen Namen eingeben.
-4. Unter **Verlauf → Jemanden einladen** den Link teilen. Die andere Person öffnet ihn, tippt „Beitreten“ und gibt ihren Namen ein.
+4. Unter **Gruppe → Jemanden einladen** den Link teilen. Die andere Person öffnet ihn, tippt „Beitreten“ und gibt ihren Namen ein.
+
+## Master, Rechte und Passwort
+- Wer die Gruppe gründet, ist **Master**. Unter **Gruppe → Mitglieder → Verwalten** kann ein Master anderen Master-Rechte geben oder entziehen. Es bleibt immer mindestens ein Master.
+- Master geben neue Aufgaben, Belohnungen und Freitext-Punkte frei, verwalten die Gruppe und können einzelnen Personen Rechte entziehen: Erledigtes bestätigen, Vorschläge machen, Freitext melden.
+- Erledigte Aufgaben zählen erst, wenn jemand anderes sie bestätigt. Niemand kann sich selbst bestätigen.
+- Unter **Gruppe → Gruppe verwalten** (nur für Master): Gruppenname und **Beitritts-Passwort**. Ist es gesetzt, brauchen neue Mitglieder Code und Passwort.
+
+## Push-Nachrichten (kostenlos über ntfy)
+1. In der App unter **Gruppe → Push-Nachrichten** auf **Push einrichten** tippen.
+2. Die kostenlose App **ntfy** aus dem App Store bzw. Google Play Store installieren.
+3. In ntfy auf **+** tippen und das angezeigte Thema eintragen (Server: ntfy.sh). Mit **Test senden** prüfen.
+Das Thema ist dein persönlicher Kanal. Gib es nicht weiter.
 
 ## Gut zu wissen
-- **Handy gewechselt oder Browserdaten gelöscht?** Mit dem Code wieder beitreten und auf „Ich bin …“ tippen. Es geht nichts verloren.
+- **Handy gewechselt oder Browserdaten gelöscht?** Mit dem Code wieder beitreten, auf „Ich bin …“ tippen und mit dem persönlichen Passwort anmelden. Es geht nichts verloren.
+- **Persönliches Passwort:** Jede Person legt beim Beitreten ein eigenes Passwort fest. Ändern unter **Gruppe → Mitglieder → Passwort ändern**. Vergessen? Ein Master kann es unter **Verwalten** zurücksetzen.
 - **Offline:** Was ihr ohne Netz eintragt, wird übertragen, sobald wieder Verbindung besteht.
 - **Kostenlose Grenzen:** Firestore erlaubt im Spark-Tarif 50.000 Lesezugriffe und 20.000 Schreibzugriffe pro Tag. Für einen Haushalt reicht das um ein Vielfaches. Wird ein Limit doch erreicht, pausiert die Datenbank bis zum nächsten Tag. Es entstehen keine Kosten.
 - **Sicherheit:** Wer den 8-stelligen Code kennt, kann mitmachen. Teilt ihn also nur mit eurer Wohnung.

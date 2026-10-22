@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Haushaltspunkte</title>
+<title>Kakaokasse</title>
 <meta name="theme-color" content="#6B2F5E">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Punkte">
+<meta name="apple-mobile-web-app-title" content="Kakaokasse">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
 <style>
@@ -49,7 +49,35 @@ button{cursor:pointer}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .me{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
-.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:14px;color:#fff;flex:none}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:14px;color:#fff;flex:none;line-height:1}
+.av.emo{font-size:17px}
+.av.lg{width:44px;height:44px;font-size:19px}.av.lg.emo{font-size:24px}
+.av.xl{width:72px;height:72px;font-size:30px}.av.xl.emo{font-size:40px}
+button.mebtn{background:none;border:0;padding:4px;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;border-radius:999px}
+button.mebtn:hover{background:var(--surface)}
+button.mebtn:empty{display:none}
+.pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px}
+.pick{height:44px;border-radius:12px;border:2px solid transparent;background:var(--bg);font-size:24px;display:grid;place-items:center;padding:0}
+.pick[aria-pressed="true"]{border-color:var(--accent)}
+.swatch{width:36px;height:36px;border-radius:50%;border:3px solid transparent;padding:0}
+.swatch[aria-pressed="true"]{border-color:var(--ink)}
+/* Rangliste */
+.rank{display:flex;flex-direction:column;gap:8px}
+.rk{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.rk.mine{border-color:var(--gold)}
+.rk .rtop{display:flex;align-items:center;gap:12px}
+.rk .pos{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:14px;flex:none;color:var(--muted);border:1px solid var(--line)}
+.rk .pos.p1{background:#E9B949;border-color:#E9B949;color:#3A2E12}
+.rk .pos.p2{background:#C9D1CE;border-color:#C9D1CE;color:#2A3330}
+.rk .pos.p3{background:#D69A6A;border-color:#D69A6A;color:#3B2414}
+.rk .who{flex:1;min-width:0;display:flex;flex-direction:column}
+.rk .who .t{font-weight:700;overflow-wrap:anywhere}
+.rk .who .s{font-size:13px;color:var(--muted)}
+.rk .score{font-family:var(--display);font-weight:800;font-size:24px;font-variant-numeric:tabular-nums;text-align:right;line-height:1}
+.rk .score small{display:block;font-family:var(--body);font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
+.bar{height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold);border-radius:3px}
+.rk .actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 
 .balances{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .bal{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -140,8 +168,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 <body class="noTabs">
 <div class="wrap">
   <div class="top">
-    <div style="min-width:0"><h1>Haushaltspunkte</h1><button class="label linkbtn" id="groupName" data-act="groupNameTap" hidden style="padding:0"></button></div>
-    <div class="me" id="meChip"></div>
+    <div style="min-width:0"><h1>Kakaokasse</h1><button class="label linkbtn" id="groupName" data-act="groupNameTap" hidden style="padding:0"></button></div>
+    <button class="mebtn" id="meChip" data-act="profile" aria-label="Mein Profil"></button>
   </div>
   <div id="status" class="note" hidden></div>
 
@@ -151,7 +179,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       <div class="sechead"><h2>Deine Gruppen</h2></div>
       <div class="list" id="startGroupList"></div>
     </section>
-    <p class="muted">Sammelt Punkte für Hausarbeit und tauscht sie gegen Belohnungen. Eine Person gründet die Gruppe, die anderen treten mit dem Code bei.</p>
+    <p class="muted">Punkte für Hausarbeit sammeln und gegen Belohnungen eintauschen, vom Kakao bis zum Filmabend. Eine Person gründet die Gruppe, die anderen treten mit dem Code bei.</p>
     <form class="card" id="joinCodeForm">
       <h3>Gruppe beitreten</h3>
       <input type="text" class="code" id="joinCode" placeholder="CODE" maxlength="9" autocomplete="off" autocapitalize="characters" required>
@@ -281,6 +309,10 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
     </div>
     <div data-view="group" class="view stack" hidden>
       <section>
+        <div class="sechead"><h2>Rangliste</h2><span class="label">nach Kontostand · <span id="memberCount"></span> Mitglieder</span></div>
+        <div class="rank" id="members"></div>
+      </section>
+      <section>
         <div class="sechead"><h2>Meine Gruppen</h2><span class="label">Auf diesem Handy</span></div>
         <div class="list" id="groupList"></div>
         <div><button class="btn" data-act="addGroup">+ Weitere Gruppe beitreten oder gründen</button></div>
@@ -299,12 +331,6 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
           <div><button class="btn ghost danger" type="button" id="joinPwRemove" data-act="removeJoinPw" data-confirm="Wirklich entfernen?">Passwort entfernen</button></div>
         </form>
       </section>
-      <section>
-        <div class="sechead"><h2>Mitglieder</h2><span class="label" id="memberCount"></span></div>
-        <div class="list" id="members"></div>
-        <div><button class="btn ghost danger" data-act="leave" data-confirm="Wirklich abmelden?">Auf diesem Handy abmelden</button></div>
-        <p class="muted small">Abmelden löscht nichts. Du kannst später mit dem Code wieder beitreten und dich als dieselbe Person auswählen.</p>
-      </section>
       <section class="card">
         <h3>Jemanden einladen</h3>
         <p class="muted small">Schick diesen Link oder den Code. Ein Konto braucht niemand.</p>
@@ -313,6 +339,10 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
         <div><button class="btn primary" data-act="copyInvite">Link kopieren</button></div>
       </section>
       <section class="card" id="pushCard"></section>
+      <section>
+        <div><button class="btn ghost danger" data-act="leave" data-confirm="Wirklich abmelden?">Auf diesem Handy abmelden</button></div>
+        <p class="muted small">Abmelden löscht nichts. Du kannst später mit dem Code wieder beitreten und dich als dieselbe Person auswählen.</p>
+      </section>
     </div>
   </div>
 </div>
@@ -324,6 +354,22 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
   <button data-tab="history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>Verlauf</button>
   <button data-tab="group"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5c2.6.2 4.4 1.9 5 4.5"/></svg>Gruppe</button>
 </div></nav>
+
+<div class="overlay" id="profileOverlay" hidden>
+  <div class="sheet">
+    <div style="display:flex;align-items:center;gap:14px"><span id="profilePreview"></span><div style="min-width:0"><h2 id="profileName"></h2><span class="muted small">Dein Profilbild sehen alle in der Gruppe.</span></div></div>
+    <div class="label">Symbol</div>
+    <div class="pickgrid" id="iconGrid"></div>
+    <div class="label">Farbe</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" id="colorGrid"></div>
+    <div class="btns" style="justify-content:flex-start">
+      <button class="btn ghost" type="button" data-act="rename">Name ändern</button>
+      <button class="btn ghost" type="button" data-act="changePw">Passwort ändern</button>
+      <span style="flex:1"></span>
+      <button class="btn primary" type="button" data-act="profileClose">Fertig</button>
+    </div>
+  </div>
+</div>
 
 <div class="overlay" id="groupRenameOverlay" hidden>
   <form class="sheet" id="groupRenameForm">
@@ -414,10 +460,13 @@ const normCode = s => String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 const gref = (...p) => doc(fs, "groups", S.group, ...p);
 const gcol = c => collection(fs, "groups", S.group, c);
 
-const COLORS = ["#6B2F5E","#1F6F78","#B4541E","#3E5BA9","#4F7A28","#8A3B3B"];
+const COLORS = ["#6B2F5E","#1F6F78","#B4541E","#3E5BA9","#4F7A28","#8A3B3B","#7A4E2D","#5B5F97","#B03A6A","#2F7D6D"];
+const ICONS = ["🐱","🐶","🦊","🐼","🐨","🐸","🐵","🦁","🐯","🐰","🐻","🐧","🦉","🐢","🐙","🦄","🌻","🌵","🍓","🍕","☕","🍫","🧁","🎸","⚽","🚀","🌈","⭐"];
 function colorFor(id){ let h=0; for (const c of String(id)) h=(h*31+c.charCodeAt(0))>>>0; return COLORS[h%COLORS.length] }
 function nameOf(id){ const m=S.members.find(m=>m.id===id); return m ? m.name : "Jemand" }
-function av(id){ const n=nameOf(id); return `<span class="av" style="background:${colorFor(id)}">${esc((n[0]||"?").toUpperCase())}</span>` }
+// Profilbild: gewähltes Symbol + Farbe, sonst Anfangsbuchstabe
+function av(id, size=""){ const m=memberOf(id), n=nameOf(id), col=(m&&m.color)||colorFor(id), ic=m&&m.icon;
+  return `<span class="av ${size} ${ic?"emo":""}" style="background:${esc(col)}">${ic?esc(ic):esc((n[0]||"?").toUpperCase())}</span>` }
 function when(t){ if(!t) return ""; const d=new Date(t), now=new Date(); const y=new Date(now); y.setDate(now.getDate()-1);
   const time=d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
   if (d.toDateString()===now.toDateString()) return "heute "+time;
@@ -580,8 +629,8 @@ function render(){
   // Punktestand
   if (S.ready.entries && S.ready.redemptions){
     $("balances").innerHTML = [...S.members].sort((a,b)=>a.id===S.me?-1:b.id===S.me?1:(a.joinedAt||0)-(b.joinedAt||0)).map(m=>{ const {b,p}=balance(m.id);
-      return `<div class="bal ${m.id===S.me?"mine":""}"><div class="who">${av(m.id)}<span>${esc(m.name)}</span></div>
-      <div class="num">${b}<small>${b===1?"Punkt":"Punkte"}</small></div>${p?`<div class="pend">${sgn(p)} warten auf Bestätigung</div>`:""}</div>` }).join("");
+      return `<div class="bal ${m.id===S.me?"mine":""}"><div class="who">${av(m.id,"lg")}<span>${esc(m.name)}</span></div>
+      <div class="num">${b<0?"−"+Math.abs(b):b}<small>${b===1?"Punkt":"Punkte"}</small></div>${p?`<div class="pend">${sgn(p)} warten auf Bestätigung</div>`:""}</div>` }).join("");
   } else $("balances").innerHTML = `<div class="bal"><div class="label">Punktestand</div><div class="muted small">Wird geladen …</div></div>`;
   const solo = S.members.length<2, master = iAmMaster();
   // Aufgaben
@@ -656,12 +705,22 @@ function render(){
     const by = x.h==="e"&&x.createdBy&&x.createdBy!==x.uid ? ` · eingetragen von ${esc(nameOf(x.createdBy))}` : "";
     return `<div class="row">${av(x.uid)}<span class="main"><span class="t">${esc(x.title)}</span><span class="s">${esc(nameOf(x.uid))} · ${when(x.at)}${by}${by?"":st}</span></span>${val}${del}</div>` }).join("")
     : `<div class="empty">Noch nichts passiert. Tippe unter „Sammeln“ auf eine erledigte Aufgabe.</div>`;
-  $("members").innerHTML = [...S.members].sort((a,b)=>(isMaster(b.id)-isMaster(a.id))||((a.joinedAt||0)-(b.joinedAt||0))).map(m=>{
-    const denied = isMaster(m.id) ? [] : Object.keys(RIGHTS).filter(r=>!can(m.id,r));
-    const sub = isMaster(m.id) ? "Master" : (denied.length ? "Darf nicht: "+denied.map(r=>RIGHTS[r]).join(", ") : "Mitglied");
-    const btns = (m.id===S.me?`<button class="btn ghost" data-act="rename">Umbenennen</button><button class="btn ghost" data-act="changePw">Passwort ändern</button>`:"")
-      + (master?`<button class="btn" data-act="manage" data-id="${m.id}">Verwalten</button>`:"");
-    return `<div class="row" style="flex-wrap:wrap">${av(m.id)}<span class="main" style="flex:1 1 140px"><span class="t">${esc(m.name)}${m.id===S.me?" (du)":""}</span><span class="s">${esc(sub)}</span></span>${btns?`<span class="actions">${btns}</span>`:""}</div>` }).join("");
+  // Rangliste nach Kontostand; Gleichstand teilt sich den Platz
+  const ranked = S.members.map(m=>({m, ...balance(m.id)})).sort((a,b)=>(b.b-a.b)||((a.m.joinedAt||0)-(b.m.joinedAt||0)));
+  const top = Math.max(1, ...ranked.map(r=>r.b));
+  let lastB=null, lastPos=0;
+  $("members").innerHTML = ranked.map((r,i)=>{ const m=r.m;
+    const pos = r.b===lastB ? lastPos : i+1; lastB=r.b; lastPos=pos;
+    const denied = isMaster(m.id) ? [] : Object.keys(RIGHTS).filter(x=>!can(m.id,x));
+    const sub = isMaster(m.id) ? "Master" : (denied.length ? "Darf nicht: "+denied.map(x=>RIGHTS[x]).join(", ") : "Mitglied");
+    const btns = (m.id===S.me?`<button class="btn ghost" data-act="profile">Mein Profil</button>`:"")
+      + (master?`<button class="btn ghost" data-act="manage" data-id="${m.id}">Verwalten</button>`:"");
+    return `<div class="rk ${m.id===S.me?"mine":""}">
+      <div class="rtop"><span class="pos ${pos<=3&&r.b>0?"p"+pos:""}">${pos}</span>${av(m.id,"lg")}
+        <span class="who"><span class="t">${esc(m.name)}${m.id===S.me?" (du)":""}</span><span class="s">${esc(sub)}${r.p?` · ${sgn(r.p)} offen`:""}</span></span>
+        <span class="score">${r.b<0?"−"+Math.abs(r.b):r.b}<small>${Math.abs(r.b)===1?"Punkt":"Punkte"}</small></span></div>
+      <div class="bar" aria-hidden="true"><i style="width:${Math.max(0,Math.round(r.b/top*100))}%"></i></div>
+      ${btns?`<div class="actions">${btns}</div>`:""}</div>` }).join("");
   $("memberCount").textContent = S.members.length;
   $("groupCode").textContent = fmtCode(S.group);
   $("inviteLink").textContent = inviteUrl();
@@ -746,7 +805,7 @@ document.addEventListener("change", ev => {
     if (!t.checked && masterIds().length<=1){ t.checked=true; toast("Es muss mindestens einen Master geben."); return }
     w(updateDoc(gref("members",id), {role: t.checked ? "master" : null}));
     toast(t.checked ? `${nameOf(id)} ist jetzt Master.` : `${nameOf(id)} ist kein Master mehr.`);
-    push([id], "Haushaltspunkte", t.checked ? `${myName()} hat dir Master-Rechte gegeben.` : `${myName()} hat dir die Master-Rechte entzogen.`);
+    push([id], "Kakaokasse", t.checked ? `${myName()} hat dir Master-Rechte gegeben.` : `${myName()} hat dir die Master-Rechte entzogen.`);
   } else if (t.dataset.right){ const id=t.dataset.id, m=memberOf(id); if(!m) return;
     const restrict = {...(m.restrict||{}), [t.dataset.right]: !t.checked};
     w(updateDoc(gref("members",id), {restrict}));
@@ -762,6 +821,16 @@ function saveGroupName(raw){ if(!iAmMaster()){ toast("Nur Master können die Gru
   w(setDoc(groupDoc(), {name}, {merge:true}));
   if (name) store.set("hp_gname_"+S.group, name); else store.del("hp_gname_"+S.group);
   renderGroupLists(); toast(name?`Gruppe heißt jetzt „${name}“.`:"Gruppenname entfernt.") }
+/* ---------- Mein Profil ---------- */
+// Sofort anzeigen, bevor die Datenbank antwortet
+function patchMe(p){ const m=memberOf(S.me); if(m) Object.assign(m,p); render(); renderProfile() }
+function renderProfile(){ if($("profileOverlay").hidden) return; const m=memberOf(S.me); if(!m) return;
+  $("profilePreview").innerHTML = av(S.me,"xl"); $("profileName").textContent = m.name;
+  const col = m.color || colorFor(S.me);
+  $("iconGrid").innerHTML = `<button class="pick" data-act="pickIcon" data-v="" aria-pressed="${!m.icon}" aria-label="Anfangsbuchstabe" style="font-family:var(--display);font-weight:800;font-size:18px">${esc((m.name[0]||"?").toUpperCase())}</button>`
+    + ICONS.map(ic=>`<button class="pick" data-act="pickIcon" data-v="${ic}" aria-pressed="${m.icon===ic}">${ic}</button>`).join("");
+  $("colorGrid").innerHTML = COLORS.map(c=>`<button class="swatch" data-act="pickColor" data-v="${c}" style="background:${c}" aria-pressed="${col===c}" aria-label="Farbe ${c}"></button>`).join("");
+}
 function openGroupRename(){ if(!iAmMaster()) return; $("groupRenameInput").value=S.groupInfo.name||""; $("groupRenameOverlay").hidden=false; setTimeout(()=>$("groupRenameInput").focus(),50) }
 $("groupRenameForm").addEventListener("submit", ev => { ev.preventDefault(); $("groupRenameOverlay").hidden=true; saveGroupName($("groupRenameInput").value) });
 $("groupNameForm").addEventListener("submit", ev => { ev.preventDefault(); $("groupNameInput").blur(); saveGroupName($("groupNameInput").value) });
@@ -776,7 +845,7 @@ async function joinPwOk(){
   $("whoPw").value=""; return true }
 function inviteUrl(){ const u = new URL(location.href); u.search = "?g="+S.group; u.hash=""; return u.toString() }
 
-function setTab(t){ S.tab=t; document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.view!==t);
+function setTab(t){ S.tab=t; $("balances").hidden = t==="group"; document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.view!==t);
   document.querySelectorAll("nav.tabs button").forEach(b=>b.dataset.tab===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   store.set("hp_tab",t); window.scrollTo(0,0) }
 
@@ -956,7 +1025,7 @@ document.addEventListener("click", ev => {
   else if (act==="removeMember"){ if(!iAmMaster()||id===S.me) return; if(isMaster(id)&&masterIds().length<=1) return; closeMember(); w(deleteDoc(gref("members",id))); toast("Aus der Gruppe entfernt.") }
   else if (act==="iam") iAm(id);
   else if (act==="loginCancel") closeLogin();
-  else if (act==="changePw") openLogin("change", S.me);
+  else if (act==="changePw"){ $("profileOverlay").hidden=true; openLogin("change", S.me) }
   else if (act==="resetPw"){ if(!iAmMaster()||id===S.me) return; w(updateDoc(gref("members",id),{pwHash:null}));
     toast(`Passwort von ${nameOf(id)} zurückgesetzt. Beim nächsten Anmelden legt ${nameOf(id)} ein neues fest.`);
     push([id], "Passwort zurückgesetzt", `${myName()} hat dein Passwort zurückgesetzt. Lege in der App ein neues fest.`) }
@@ -965,7 +1034,7 @@ document.addEventListener("click", ev => {
   else if (act==="pushOn"){ const topic="hp-"+rnd(20,"abcdefghijkmnpqrstuvwxyz23456789"); w(updateDoc(gref("members",S.me),{ntfy:topic})); toast("Push eingerichtet. Folge jetzt den Schritten.") }
   else if (act==="pushOff"){ w(updateDoc(gref("members",S.me),{ntfy:null})); toast("Push ausgeschaltet.") }
   else if (act==="pushTest"){ const m=memberOf(S.me); if(!m||!m.ntfy) return;
-    sendNtfy(m.ntfy,"Haushaltspunkte","Test: Push funktioniert! 🎉").then(r=>toast(r.ok?"Test gesendet. Kommt sie in ntfy an?":"Senden hat nicht geklappt."),()=>toast("Senden hat nicht geklappt. Bist du online?")) }
+    sendNtfy(m.ntfy,"Kakaokasse","Test: Push funktioniert! 🎉").then(r=>toast(r.ok?"Test gesendet. Kommt sie in ntfy an?":"Senden hat nicht geklappt."),()=>toast("Senden hat nicht geklappt. Bist du online?")) }
   else if (act==="copyTopic"){ const m=memberOf(S.me); if(!m) return;
     if (navigator.clipboard) navigator.clipboard.writeText(m.ntfy).then(()=>toast("Thema kopiert."),()=>toast("Bitte das Thema markieren und kopieren."));
     else toast("Bitte das Thema markieren und kopieren.") }
@@ -975,14 +1044,18 @@ document.addEventListener("click", ev => {
     const rest=myGroups().filter(c=>c!==cur); saveGroups(rest); enterGroup(rest[0]||null); toast(rest.length?`Abgemeldet. Jetzt geöffnet: ${groupLabel(rest[0])}.`:"Abgemeldet.") }
   else if (act==="switchGroup"){ if(id!==S.group){ enterGroup(id); setTab("collect"); toast(`${groupLabel(id)} geöffnet.`) } }
   else if (act==="groupRename"){ openGroupRename() }
+  else if (act==="profile"){ if(S.me && memberOf(S.me)){ $("profileOverlay").hidden=false; renderProfile() } }
+  else if (act==="profileClose"){ $("profileOverlay").hidden=true }
+  else if (act==="pickIcon"){ const v=b.dataset.v||null; w(updateDoc(gref("members",S.me),{icon:v})); patchMe({icon:v}) }
+  else if (act==="pickColor"){ w(updateDoc(gref("members",S.me),{color:b.dataset.v})); patchMe({color:b.dataset.v}) }
   else if (act==="groupRenameCancel"){ $("groupRenameOverlay").hidden=true }
   else if (act==="groupNameTap"){ if (iAmMaster()) openGroupRename(); else setTab("group") }
   else if (act==="addGroup"){ enterGroup(null); window.scrollTo(0,0) }
-  else if (act==="rename"){ $("renameName").value=nameOf(S.me); $("renameOverlay").hidden=false; $("renameName").focus() }
+  else if (act==="rename"){ $("profileOverlay").hidden=true; $("renameName").value=nameOf(S.me); $("renameOverlay").hidden=false; $("renameName").focus() }
   else if (act==="renameCancel") $("renameOverlay").hidden=true;
   else if (act==="copyInvite"){ const url=inviteUrl();
     const done=()=>toast("Link kopiert.");
-    if (navigator.share){ navigator.share({title:"Haushaltspunkte",text:`Mach mit bei unseren Haushaltspunkten! Code: ${fmtCode(S.group)}`,url}).catch(()=>{}) }
+    if (navigator.share){ navigator.share({title:"Kakaokasse",text:`Mach mit bei unserer Kakaokasse! Code: ${fmtCode(S.group)}`,url}).catch(()=>{}) }
     else if (navigator.clipboard) navigator.clipboard.writeText(url).then(done,()=>toast("Bitte den Link oben markieren und kopieren."));
     else toast("Bitte den Link oben markieren und kopieren.") }
   else if (act==="edit"||act==="counter") openEdit(coll,id,act);
@@ -1039,7 +1112,7 @@ bindForm("freeForm","freeTitle","freePoints",(t,p)=>{ const m=iAmMaster();
   w(setDoc(doc(gcol("entries")), entry));
   push(confirmersOf(entry), "Bitte bestätigen", `${myName()} hat „${t}“ erledigt und schlägt ${pts(p)} vor.`);
   toast(m ? `Gemeldet. ${pts(p)} zählen, sobald jemand bestätigt.` : `Gemeldet. ${masterNames()} prüft die Punkte und bestätigt.`) });
-document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); closeMember(); $("groupRenameOverlay").hidden=true; if(login&&!login.forced) closeLogin(); $("renameOverlay").hidden=true } });
+document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeEdit(); closeMember(); $("groupRenameOverlay").hidden=true; $("profileOverlay").hidden=true; if(login&&!login.forced) closeLogin(); $("renameOverlay").hidden=true } });
 
 /* ---------- Start ---------- */
 function boot(){

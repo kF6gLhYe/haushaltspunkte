@@ -1,6 +1,6 @@
 {
-  "name": "Haushaltspunkte",
-  "short_name": "Punkte",
+  "name": "Kakaokasse",
+  "short_name": "Kakaokasse",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
