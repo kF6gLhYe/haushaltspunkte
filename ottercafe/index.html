@@ -57,6 +57,8 @@ button{cursor:pointer}
 .brand .ot{width:44px;height:44px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;flex:none;overflow:hidden}
 .brand .ot svg{width:44px;height:44px}
 .brand .sub{font-size:13px;color:var(--muted)}
+.namebtn{background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.namebtn .pen{font-size:15px;color:var(--accent);margin-left:6px;font-family:var(--body)}
 button.mebtn{background:none;border:0;padding:4px;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;border-radius:999px}
 button.mebtn:empty{display:none}
 .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:14px;color:#fff;flex:none;line-height:1}
@@ -181,7 +183,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 <body class="noTabs">
 <div class="wrap">
   <div class="top">
-    <div class="brand"><span class="ot" id="brandOtter"></span><div style="min-width:0"><h1 id="cafeName">Café Otterliebe</h1><div class="sub" id="roleLine"></div></div></div>
+    <div class="brand"><span class="ot" id="brandOtter"></span><div style="min-width:0"><h1><button class="namebtn" id="cafeName" data-act="cafeNameTap">Café Otterliebe</button></h1><div class="sub" id="roleLine"></div></div></div>
     <button class="mebtn" id="meChip" data-act="profile" aria-label="Mein Profil"></button>
   </div>
   <div id="status" class="note" hidden></div>
@@ -189,6 +191,10 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 
   <!-- START -->
   <div id="screenStart" class="stack" hidden>
+    <section id="startCafes" hidden>
+      <div class="sechead"><h2>Deine Cafés</h2></div>
+      <div class="list" id="startCafeList"></div>
+    </section>
     <div class="otterbox"><span class="ot" data-otter></span><p>Willkommen im Café Otterliebe. Hier wird bestellt, angeschrieben und mit Gefallen bezahlt.</p></div>
     <form class="card" id="joinForm">
       <h3>Dem Café beitreten</h3>
@@ -221,7 +227,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       <input type="password" id="whoPw2" placeholder="Passwort wiederholen" autocomplete="new-password" required>
       <div><button class="btn primary" type="submit">Platz nehmen</button></div>
     </form>
-    <button class="linkbtn" data-act="leave">Anderes Café wählen</button>
+    <button class="linkbtn" data-act="leave">Doch nicht hier hinein</button>
   </div>
 
   <!-- APP -->
@@ -311,6 +317,11 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 
     <!-- CAFÉ -->
     <div data-view="cafe" class="view stack" hidden>
+      <section>
+        <div class="sechead"><h2>Meine Cafés</h2><span class="label">Auf diesem Handy</span></div>
+        <div class="list" id="cafeList"></div>
+        <div><button class="btn" data-act="addCafe">+ Weiteres Café beitreten oder eröffnen</button></div>
+      </section>
       <section>
         <div class="sechead"><h2>Gäste und Wirte</h2><span class="label" id="memberCount"></span></div>
         <div class="list" id="members"></div>
@@ -413,6 +424,15 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
       <button class="btn primary" type="button" data-act="closeSheets">Fertig</button>
     </div>
   </div>
+</div>
+
+<div class="overlay" id="cafeRenameOverlay" hidden>
+  <form class="sheet" id="cafeRenameForm">
+    <h2>Café umbenennen</h2>
+    <p class="muted small">Der neue Name steht bei allen Gästen und Wirten oben in der App und auf der Speisekarte.</p>
+    <input type="text" id="cafeRenameInput" maxlength="40" placeholder="z. B. Café Otterliebe">
+    <div class="btns"><button class="btn ghost" type="button" data-act="closeSheets">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div>
+  </form>
 </div>
 
 <div class="overlay" id="renameOverlay" hidden>
@@ -586,7 +606,9 @@ const others = () => members().map(m=>m.id).filter(id=>id!==S.me);
 function show(screen){ for (const id of ["screenStart","screenWho","screenApp"]) $(id).hidden=id!==screen;
   $("tabs").hidden = screen!=="screenApp"; document.body.classList.toggle("noTabs", screen!=="screenApp") }
 function route(){
-  $("cafeName").textContent = info().name || "Café Otterliebe";
+  $("cafeName").innerHTML = esc(info().name || "Café Otterliebe") + (S.cafe && iAmWirt() ? `<span class="pen" aria-hidden="true">✎</span>` : "");
+  if (S.cafe && info().name) store.set("oc_cname_"+S.cafe, info().name);
+  renderCafeLists();
   if (!S.cafe){ show("screenStart"); $("meChip").innerHTML=""; $("roleLine").textContent=""; return }
   if (!S.ready.cafe) return;
   if (!memberOf(S.me)){ show("screenWho"); renderWho(); $("meChip").innerHTML=""; $("roleLine").textContent=""; return }
@@ -781,7 +803,7 @@ function renderProfile(){ const m=memberOf(S.me); if(!m) return;
 function setTab(t){ S.tab=t; document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.view!==t);
   document.querySelectorAll("nav.tabs button").forEach(b=>b.dataset.tab===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   store.set("oc_tab",t); window.scrollTo(0,0) }
-function closeSheets(){ for (const id of ["orderOverlay","itemOverlay","profileOverlay","renameOverlay","memberOverlay","privacyOverlay"]) $(id).hidden=true; openMemberId=null; edit=null; if(login&&!login.forced) closeLogin() }
+function closeSheets(){ for (const id of ["cafeRenameOverlay","orderOverlay","itemOverlay","profileOverlay","renameOverlay","memberOverlay","privacyOverlay"]) $(id).hidden=true; openMemberId=null; edit=null; if(login&&!login.forced) closeLogin() }
 // Otter überall einsetzen, wo data-otter steht
 const fillOtters = () => document.querySelectorAll("[data-otter]:empty").forEach(e=>e.innerHTML=OTTER);
 new MutationObserver(fillOtters).observe(document.body,{childList:true,subtree:true});
@@ -790,8 +812,26 @@ $("brandOtter").innerHTML = OTTER; fillOtters();
 setInterval(()=>{ let expired=false; document.querySelectorAll("[data-until]").forEach(e=>{ const ms=+e.dataset.until-Date.now(); e.textContent=countdown(ms); if(ms<=0) expired=true });
   if (expired && S.info && memberOf(S.me)) render() }, 1000);
 
+/* ---------- Mehrere Cafés auf einem Handy ---------- */
+function myCafes(){ try{ const a=JSON.parse(store.get("oc_cafes")||"[]"); return Array.isArray(a)?a:[] }catch(e){ return [] } }
+function saveCafes(a){ store.set("oc_cafes", JSON.stringify([...new Set(a)])) }
+const cafeLabel = c => store.get("oc_cname_"+c) || ("Café "+fmtCode(c));
+function renderCafeLists(){
+  const cs=myCafes(), wirt=iAmWirt();
+  $("cafeList").innerHTML = cs.map(c=>`<div class="row"><span class="main"><span class="t">${esc(cafeLabel(c))}</span><span class="s">Code ${fmtCode(c)}</span></span>
+    <span class="actions">${c===S.cafe ? `<span class="pill" style="align-self:center">geöffnet</span>${wirt?`<button class="btn sm ghost" data-act="cafeRename">Umbenennen</button>`:""}`
+      : `<button class="btn sm primary" data-act="switchCafe" data-id="${c}">Öffnen</button>`}</span></div>`).join("");
+  $("startCafes").hidden = !cs.length;
+  $("startCafeList").innerHTML = cs.map(c=>`<button class="row" data-act="switchCafe" data-id="${c}"><span class="main"><span class="t">${esc(cafeLabel(c))}</span><span class="s">Code ${fmtCode(c)} · öffnen</span></span></button>`).join("");
+}
+function openCafeRename(){ if(!iAmWirt()) return; $("cafeRenameInput").value=info().name||""; $("cafeRenameOverlay").hidden=false; setTimeout(()=>$("cafeRenameInput").focus(),50) }
+function saveCafeName(raw){ if(!iAmWirt()){ toast("Nur der Wirt kann das Café umbenennen."); return }
+  const name=String(raw||"").trim().slice(0,40)||"Café Otterliebe";
+  upd({name}); store.set("oc_cname_"+S.cafe, name); renderCafeLists(); toast(`Das Café heißt jetzt „${name}“.`) }
+
 /* ---------- Café betreten, Live-Verbindung ---------- */
 function enterCafe(code){
+  if (code) saveCafes([...myCafes(), code]);
   for (const u of unsubs) u(); unsubs=[];
   S.cafe=code; S.info=null; S.weeks={}; S.ready={};
   S.me = code ? store.get("oc_member_"+code) : null;
@@ -952,7 +992,12 @@ document.addEventListener("click", ev => {
     case "iam": iAm(id); break;
     case "loginCancel": closeLogin(); break;
     case "showCreate": $("createForm").hidden=false; $("showCreate").hidden=true; $("createPw").focus(); break;
-    case "leave": { const c=S.cafe; if(c) store.del("oc_member_"+c); enterCafe(null); break }
+    case "leave": { const c=S.cafe; if(c){ store.del("oc_member_"+c); store.del("oc_cname_"+c) }
+      const rest=myCafes().filter(x=>x!==c); saveCafes(rest); enterCafe(rest[0]||null); toast(rest.length?`Abgemeldet. Jetzt geöffnet: ${cafeLabel(rest[0])}.`:"Abgemeldet."); break }
+    case "switchCafe": if(id!==S.cafe){ enterCafe(id); setTab("karte"); toast(`${cafeLabel(id)} geöffnet.`) } break;
+    case "addCafe": enterCafe(null); window.scrollTo(0,0); break;
+    case "cafeRename": openCafeRename(); break;
+    case "cafeNameTap": if(S.cafe && iAmWirt()) openCafeRename(); else if (S.cafe) setTab("cafe"); break;
     case "reload": location.reload(); break;
   }
 });
@@ -990,7 +1035,8 @@ $("favorForm").addEventListener("submit", e => { e.preventDefault(); if(!iAmWirt
 $("wishForm").addEventListener("submit", e => { e.preventDefault(); const text=$("wishText").value.trim(); if(!text) return;
   upd({[`wishes.${newId()}`]:{text,by:S.me,at:Date.now(),status:"open"}}); push(wirte(),"confirm","Wunsch-Brett",`${myName()} wünscht sich: ${text}`);
   $("wishText").value=""; toast("Angeheftet.") });
-$("nameForm").addEventListener("submit", e => { e.preventDefault(); if(!iAmWirt()) return; upd({name:$("cafeNameInput").value.trim()||"Café Otterliebe"}); $("cafeNameInput").blur(); toast("Gespeichert.") });
+$("nameForm").addEventListener("submit", e => { e.preventDefault(); $("cafeNameInput").blur(); saveCafeName($("cafeNameInput").value) });
+$("cafeRenameForm").addEventListener("submit", e => { e.preventDefault(); $("cafeRenameOverlay").hidden=true; saveCafeName($("cafeRenameInput").value) });
 $("limitForm").addEventListener("submit", e => { e.preventDefault(); if(!iAmWirt()) return; const l=Math.round(+$("limitInput").value); if(!(l>0)) return; upd({limit:l}); $("limitInput").blur(); toast(`Grenze steht jetzt bei ${l} Punkten.`) });
 $("renameForm").addEventListener("submit", e => { e.preventDefault(); const n=$("renameName").value.trim(); if(!n) return; upd({[`members.${S.me}.name`]:n}); closeSheets() });
 
