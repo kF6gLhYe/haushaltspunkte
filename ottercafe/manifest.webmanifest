@@ -1,0 +1,14 @@
+{
+  "name": "Café Otterliebe",
+  "short_name": "Otterliebe",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F8F2F5",
+  "theme_color": "#B3186B",
+  "lang": "de",
+  "icons": [
+    { "src": "otter-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "otter-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

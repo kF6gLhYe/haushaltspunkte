@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Kakaokasse (bestehend, unverändert lassen) ----------
+    match /groups/{code} {
+      allow create: if request.auth != null
+        && code.size() == 8
+        && request.resource.data.keys().hasOnly(['createdAt', 'pw'])
+        && request.resource.data.pw == 'DEIN-PASSWORT';
+      allow get, list, update, delete: if false;
+      match /{coll}/{id} {
+        allow read, write: if request.auth != null
+          && coll in ['members', 'tasks', 'rewards', 'entries', 'redemptions', 'archive']
+          && exists(/databases/$(database)/documents/groups/$(code));
+      }
+    }
+
+    // ---------- Café Otterliebe (neu) ----------
+    match /cafes/{code} {
+      // Neues Café nur mit dem Gründungs-Passwort (dasselbe wie oben eintragen)
+      allow create: if request.auth != null
+        && code.size() == 8
+        && request.resource.data.keys().hasOnly(['createdAt', 'pw'])
+        && request.resource.data.pw == 'DEIN-PASSWORT';
+      allow get, list, update, delete: if false;
+      // data/cafe = Karte, Mitglieder, Gefallen …; weeks/<Woche> = Bestellungen + Bezahlungen
+      match /{coll}/{id} {
+        allow read, write: if request.auth != null
+          && coll in ['data', 'weeks']
+          && exists(/databases/$(database)/documents/cafes/$(code));
+      }
+    }
+  }
+}

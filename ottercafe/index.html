@@ -1,0 +1,1067 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Café Otterliebe</title>
+<meta name="theme-color" content="#B3186B">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="otter-192.png">
+<link rel="apple-touch-icon" href="otter-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Otterliebe">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Figtree:wght@400;600;700&display=swap">
+<style>
+/* Layout: eine Handy-Spalte wie eine Speisekarte; unten 4 Tabs (Karte, Bestellungen, Deckel, Café) */
+:root{
+  --bg:#F8F2F5; --surface:#FFFFFF; --ink:#2B2230; --muted:#6E6273; --line:#EADCE4;
+  --accent:#B3186B; --accent-ink:#FFFFFF; --accent-soft:#F7E1EC;
+  --mint:#DDF2EA; --mint-ink:#1F6B52; --butter:#FFF1C9; --butter-ink:#7A5A00;
+  --ok:#2E7D5B; --danger:#B3261E;
+  --display:"Fraunces", Georgia, "Times New Roman", serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tabh:64px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#1C1620; --surface:#261E2B; --ink:#F2E9F0; --muted:#B3A6B6; --line:#3A2F40;
+  --accent:#F07AB6; --accent-ink:#2B0F1E; --accent-soft:#3A2232;
+  --mint:#1F3A31; --mint-ink:#9FE3C6; --butter:#3A3218; --butter-ink:#F3D27A;
+  --ok:#7FD3A8; --danger:#F2938C; color-scheme:dark}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-bottom:calc(var(--tabh) + 24px + env(safe-area-inset-bottom,0px))}
+body.noTabs{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px;padding-top:16px}
+.stack{display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:25px;font-weight:800}
+h2{font-size:20px;font-weight:800}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Kopf */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .ot{width:44px;height:44px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;flex:none;overflow:hidden}
+.brand .ot svg{width:44px;height:44px}
+.brand .sub{font-size:13px;color:var(--muted)}
+button.mebtn{background:none;border:0;padding:4px;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;border-radius:999px}
+button.mebtn:empty{display:none}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:14px;color:#fff;flex:none;line-height:1}
+.av.emo{font-size:17px}
+.av.lg{width:44px;height:44px;font-size:19px}.av.lg.emo{font-size:24px}
+.av.xl{width:72px;height:72px;font-size:30px}.av.xl.emo{font-size:40px}
+
+/* Bausteine */
+section{display:flex;flex-direction:column;gap:12px}
+.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0;flex-wrap:wrap}
+.row .main{flex:1 1 160px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.row .t{font-weight:700;overflow-wrap:anywhere}
+.row .s{font-size:13px;color:var(--muted)}
+.row .actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted);font-size:15px}
+.note{border-radius:12px;padding:12px 14px;background:var(--butter);color:var(--butter-ink);font-size:14px}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);align-self:flex-start}
+.pill.mint{background:var(--mint);color:var(--mint-ink)}
+.pill.butter{background:var(--butter);color:var(--butter-ink)}
+.pts{font-family:var(--display);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.plus{color:var(--ok);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.minus{color:var(--danger);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.armed{background:var(--danger);color:#fff;border-color:var(--danger)}
+.linkbtn{background:none;border:0;padding:4px 0;color:var(--accent);font-weight:700;font-size:14px;text-align:left}
+form.add{display:flex;flex-direction:column;gap:10px}
+.fields{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fields > *{min-width:0}
+.fields .grow{flex:1 1 180px}
+.fields .num{flex:0 0 96px;width:96px}
+input[type=text],input[type=number],input[type=password],input[type=datetime-local],input[type=time],select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;width:100%}
+textarea{resize:vertical;min-height:64px}
+input.code{font-family:var(--display);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:20px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;cursor:pointer}
+.seg input{accent-color:var(--accent)}
+
+/* Speisekarte */
+.menu{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 16px;display:flex;flex-direction:column;gap:18px}
+.menu h3{font-size:19px;text-align:center;letter-spacing:.02em}
+.menu h3::before,.menu h3::after{content:"·";color:var(--accent);margin:0 10px}
+.dish{display:flex;flex-direction:column;gap:6px}
+.dish .line{display:flex;align-items:baseline;gap:8px}
+.dish .name{font-weight:700;overflow-wrap:anywhere}
+.dish .dots{flex:1;border-bottom:2px dotted var(--line);transform:translateY(-4px);min-width:16px}
+.dish .tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.vote{border:1px solid var(--line);background:transparent;border-radius:999px;padding:3px 9px;font-size:13px;display:inline-flex;align-items:center;gap:4px;color:var(--muted)}
+.vote[aria-pressed="true"]{background:var(--mint);color:var(--mint-ink);border-color:transparent}
+.vote.down[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.vote svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fair{font-size:12px;color:var(--muted)}
+
+/* Specials */
+.special{background:var(--butter);color:var(--butter-ink);border-radius:16px;padding:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid transparent}
+.special .main{flex:1 1 160px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.special .t{font-family:var(--display);font-weight:800;font-size:18px;overflow-wrap:anywhere}
+.special .s{font-size:13px}
+.special .count{font-variant-numeric:tabular-nums;font-weight:700}
+.special.soon{background:var(--surface);color:var(--ink);border-color:var(--line)}
+
+/* Deckel */
+.tab{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.tab.due{border-color:var(--accent)}
+.tab .big{font-family:var(--display);font-weight:800;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.tab .big small{font-family:var(--body);font-size:15px;font-weight:400;color:var(--muted);margin-left:6px}
+.bar{height:10px;border-radius:5px;background:var(--bg);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.review{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.review .k{background:var(--bg);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.review .k b{font-family:var(--display);font-size:20px;overflow-wrap:anywhere}
+.review .k.wide{grid-column:1/-1;background:var(--accent-soft)}
+
+/* Otter-Hinweis */
+.otterbox{display:flex;gap:12px;align-items:center}
+.otterbox .ot{width:64px;height:64px;flex:none;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;overflow:hidden}
+.otterbox .ot svg{width:64px;height:64px}
+
+/* Tabs */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+nav.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--tabh)}
+nav.tabs button{background:none;border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:700;color:var(--muted);position:relative;min-width:0}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button[aria-current="page"]{color:var(--accent)}
+.badge{position:absolute;top:8px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-size:11px;display:grid;place-items:center;padding:0 5px}
+
+/* Fenster von unten */
+.overlay{position:fixed;inset:0;z-index:20;background:rgba(20,10,18,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:20px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.sheet .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.sheet.read{line-height:1.5}
+.sheet.read ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.toggle:last-child{border-bottom:0}
+.toggle input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.toggle span{display:flex;flex-direction:column}
+.pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px}
+.pick{height:44px;border-radius:12px;border:2px solid transparent;background:var(--bg);font-size:24px;display:grid;place-items:center;padding:0}
+.pick[aria-pressed="true"]{border-color:var(--accent)}
+.swatch{width:36px;height:36px;border-radius:50%;border:3px solid transparent;padding:0}
+.swatch[aria-pressed="true"]{border-color:var(--ink)}
+.bigcode{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:.14em;user-select:all}
+.linkbox{font-size:13px;color:var(--muted);overflow-wrap:anywhere;user-select:all}
+.topic{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;user-select:all;overflow-wrap:anywhere}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + 14px + env(safe-area-inset-bottom,0px));z-index:30;
+  background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;display:flex;gap:14px;align-items:center;font-size:14px;width:max-content;max-width:calc(100% - 32px)}
+.toast button{background:none;border:0;color:var(--accent-soft);font-weight:700}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{transform:translate(-50%,8px);opacity:0}}}
+</style>
+</head>
+<body class="noTabs">
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><span class="ot" id="brandOtter"></span><div style="min-width:0"><h1 id="cafeName">Café Otterliebe</h1><div class="sub" id="roleLine"></div></div></div>
+    <button class="mebtn" id="meChip" data-act="profile" aria-label="Mein Profil"></button>
+  </div>
+  <div id="status" class="note" hidden></div>
+  <button class="note" id="updateBar" data-act="reload" hidden style="border:0;text-align:left;font-weight:700;cursor:pointer">Die Karte wurde neu gedruckt. Tippen zum Laden.</button>
+
+  <!-- START -->
+  <div id="screenStart" class="stack" hidden>
+    <div class="otterbox"><span class="ot" data-otter></span><p>Willkommen im Café Otterliebe. Hier wird bestellt, angeschrieben und mit Gefallen bezahlt.</p></div>
+    <form class="card" id="joinForm">
+      <h3>Dem Café beitreten</h3>
+      <input type="text" class="code" id="joinCode" placeholder="CODE" maxlength="9" autocomplete="off" autocapitalize="characters" required>
+      <div><button class="btn primary" type="submit">Beitreten</button></div>
+    </form>
+    <button class="linkbtn" type="button" data-act="showCreate" id="showCreate">Neues Café eröffnen</button>
+    <form class="card" id="createForm" hidden>
+      <h3>Neues Café eröffnen</h3>
+      <p class="muted small">Nur mit dem Gründungs-Passwort. Wer ein Café eröffnet, ist der Wirt.</p>
+      <input type="password" id="createPw" placeholder="Gründungs-Passwort" autocomplete="off" required>
+      <input type="text" id="createName" placeholder="Dein Name" maxlength="24" required>
+      <input type="password" id="createMyPw" placeholder="Dein persönliches Passwort (mind. 4 Zeichen)" autocomplete="new-password" required>
+      <div><button class="btn" type="submit">Café eröffnen</button></div>
+    </form>
+  </div>
+
+  <!-- WER BIST DU -->
+  <div id="screenWho" class="stack" hidden>
+    <section>
+      <h2>Wer kommt herein?</h2>
+      <p class="muted small">Schon einmal hier gewesen? Dann tippe auf deinen Namen und melde dich mit deinem Passwort an.</p>
+      <div class="list" id="whoList"></div>
+    </section>
+    <form class="card" id="whoNewForm">
+      <h3>Ich bin neu hier</h3>
+      <p class="muted small">Neue Gäste setzen sich mit Name und eigenem Passwort an den Tisch.</p>
+      <input type="text" id="whoName" placeholder="Dein Name" maxlength="24" required>
+      <input type="password" id="whoPw" placeholder="Dein persönliches Passwort (mind. 4 Zeichen)" autocomplete="new-password" required>
+      <input type="password" id="whoPw2" placeholder="Passwort wiederholen" autocomplete="new-password" required>
+      <div><button class="btn primary" type="submit">Platz nehmen</button></div>
+    </form>
+    <button class="linkbtn" data-act="leave">Anderes Café wählen</button>
+  </div>
+
+  <!-- APP -->
+  <div id="screenApp" class="stack" hidden>
+    <!-- KARTE -->
+    <div data-view="karte" class="view stack">
+      <div id="specials" class="stack" style="gap:10px"></div>
+      <div id="menu"></div>
+      <section class="card" id="wirtAddItem" hidden>
+        <h3>Neu auf die Karte</h3>
+        <form class="add" id="itemForm">
+          <div class="fields">
+            <input class="grow" type="text" id="itemName" placeholder="z. B. Chai Latte" maxlength="40" required>
+            <input class="num" type="number" id="itemPts" placeholder="Punkte" min="1" max="999" inputmode="numeric" required>
+          </div>
+          <input type="text" id="itemCat" placeholder="Kategorie, z. B. Getränke" maxlength="24" list="catList" required>
+          <datalist id="catList"></datalist>
+          <div><button class="btn primary" type="submit">Auf die Karte setzen</button></div>
+        </form>
+      </section>
+      <section class="card" id="wirtAddSpecial" hidden>
+        <h3>Special anlegen</h3>
+        <form class="add" id="specialForm">
+          <div class="fields">
+            <input class="grow" type="text" id="spTitle" placeholder="z. B. Chai-Latte-Dienstag" maxlength="40" required>
+            <input class="num" type="number" id="spPts" placeholder="Punkte" min="1" max="999" inputmode="numeric" required>
+          </div>
+          <input type="text" id="spNote" placeholder="Kurze Beschreibung (optional)" maxlength="80">
+          <div class="seg" role="radiogroup" aria-label="Art des Specials">
+            <label><input type="radio" name="spKind" value="once" checked> Einmalig bis …</label>
+            <label><input type="radio" name="spKind" value="weekly"> Jede Woche</label>
+          </div>
+          <div id="spOnce"><input type="datetime-local" id="spUntil" aria-label="Verfügbar bis"></div>
+          <div id="spWeekly" class="fields" hidden>
+            <select id="spDay" class="grow" aria-label="Wochentag">
+              <option value="1">Montag</option><option value="2">Dienstag</option><option value="3">Mittwoch</option><option value="4">Donnerstag</option><option value="5">Freitag</option><option value="6">Samstag</option><option value="0">Sonntag</option>
+            </select>
+            <input type="time" id="spRemind" value="09:00" aria-label="Erinnerung um" style="flex:0 0 150px;width:150px">
+          </div>
+          <p class="muted small" id="spWeeklyHint" hidden>Am Tag selbst kommt zur gewählten Uhrzeit eine Erinnerung aufs Handy.</p>
+          <div><button class="btn primary" type="submit">Special anlegen</button></div>
+        </form>
+      </section>
+      <section>
+        <div class="sechead"><h2>Wunsch-Brett</h2><span class="label">Wünsche an die Küche</span></div>
+        <form class="add" id="wishForm">
+          <div class="fields"><input class="grow" type="text" id="wishText" placeholder="z. B. Mal wieder Waffeln?" maxlength="120" required><button class="btn" type="submit">Anheften</button></div>
+        </form>
+        <div class="list" id="wishes"></div>
+      </section>
+    </div>
+
+    <!-- BESTELLUNGEN -->
+    <div data-view="orders" class="view stack" hidden>
+      <section id="ordersNow"></section>
+      <section id="ordersLater"></section>
+      <section id="ordersDone"></section>
+    </div>
+
+    <!-- DECKEL -->
+    <div data-view="deckel" class="view stack" hidden>
+      <div id="deckelTop" class="stack" style="gap:12px"></div>
+      <section>
+        <div class="sechead"><h2>Gefallen</h2><span class="label">Damit wird bezahlt</span></div>
+        <div class="list" id="favors"></div>
+        <form class="card add" id="favorForm" hidden>
+          <h3>Gefallen anbieten</h3>
+          <div class="fields">
+            <input class="grow" type="text" id="favTitle" placeholder="z. B. Kleines Date" maxlength="40" required>
+            <input class="num" type="number" id="favValue" placeholder="Wert" min="1" max="9999" inputmode="numeric" required>
+          </div>
+          <p class="muted small">Der Gast bestätigt das Angebot, danach kann er damit bezahlen.</p>
+          <div><button class="btn primary" type="submit">Anbieten</button></div>
+        </form>
+      </section>
+      <section>
+        <div class="sechead"><h2>Rückblick</h2><span class="label" id="reviewLabel"></span></div>
+        <div class="seg" id="reviewSeg"></div>
+        <div id="review"></div>
+      </section>
+      <section>
+        <div class="sechead"><h2>Verlauf</h2><span class="label">Neueste zuerst</span></div>
+        <div class="list" id="history"></div>
+        <div id="olderBox"></div>
+      </section>
+    </div>
+
+    <!-- CAFÉ -->
+    <div data-view="cafe" class="view stack" hidden>
+      <section>
+        <div class="sechead"><h2>Gäste und Wirte</h2><span class="label" id="memberCount"></span></div>
+        <div class="list" id="members"></div>
+      </section>
+      <section class="card" id="settingsCard" hidden>
+        <h3>Café einrichten</h3>
+        <form class="add" id="nameForm">
+          <label class="label" for="cafeNameInput">Name des Cafés</label>
+          <div class="fields"><input class="grow" type="text" id="cafeNameInput" maxlength="40"><button class="btn" type="submit">Speichern</button></div>
+        </form>
+        <form class="add" id="limitForm">
+          <label class="label" for="limitInput">Grenze für den Deckel (Punkte)</label>
+          <div class="fields"><input class="num" type="number" id="limitInput" min="1" max="99999" inputmode="numeric"><button class="btn" type="submit">Speichern</button></div>
+          <p class="muted small">Ist der Deckel so hoch, ist die Rechnung fällig. Bestellen geht trotzdem weiter.</p>
+        </form>
+      </section>
+      <section class="card" id="pushCard"></section>
+      <section class="card">
+        <h3>Jemanden einladen</h3>
+        <p class="muted small">Schick diesen Link oder den Code. Neue Gäste setzen sich mit eigenem Passwort dazu.</p>
+        <div class="bigcode" id="cafeCode"></div>
+        <div class="linkbox" id="inviteLink"></div>
+        <div><button class="btn primary" data-act="copyInvite">Link teilen</button></div>
+      </section>
+      <section class="card">
+        <h3>Datenschutz</h3>
+        <p class="muted small">Was im Café über dich notiert wird.</p>
+        <div><button class="btn" data-act="privacy">Hausordnung lesen</button></div>
+      </section>
+      <section>
+        <div><button class="btn ghost danger" data-act="leave" data-confirm="Wirklich gehen?">Auf diesem Handy abmelden</button></div>
+        <p class="muted small">Abmelden löscht nichts. Mit Code und Passwort kommst du jederzeit wieder rein.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs" id="tabs" aria-label="Bereiche" hidden><div class="in">
+  <button data-tab="karte" aria-current="page"><svg viewBox="0 0 24 24"><path d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 1-3-3Z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Karte</button>
+  <button data-tab="orders"><svg viewBox="0 0 24 24"><path d="M4 10h13v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6Z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3c-1 1.5 1 2.5 0 4M12 3c-1 1.5 1 2.5 0 4"/></svg>Bestellungen<span class="badge" id="badgeOrders" hidden>0</span></button>
+  <button data-tab="deckel"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg>Deckel<span class="badge" id="badgeDeckel" hidden>0</span></button>
+  <button data-tab="cafe"><svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>Café</button>
+</div></nav>
+
+<!-- Fenster -->
+<div class="overlay" id="orderOverlay" hidden>
+  <form class="sheet" id="orderForm">
+    <h2 id="orderHead">Bestellen</h2>
+    <p class="muted" id="orderSub"></p>
+    <input type="text" id="orderNote" placeholder="Wunsch dazu, z. B. mit Hafermilch (optional)" maxlength="80">
+    <div class="seg" role="radiogroup" aria-label="Wann">
+      <label><input type="radio" name="orderWhen" value="now" checked> Jetzt</label>
+      <label><input type="radio" name="orderWhen" value="later"> Vorbestellen für …</label>
+    </div>
+    <input type="datetime-local" id="orderAt" hidden aria-label="Gewünschter Zeitpunkt">
+    <div class="btns"><button class="btn ghost" type="button" data-act="closeSheets">Abbrechen</button><button class="btn primary" type="submit">Bestellen</button></div>
+  </form>
+</div>
+
+<div class="overlay" id="itemOverlay" hidden>
+  <form class="sheet" id="itemEditForm">
+    <h2>Gericht bearbeiten</h2>
+    <div class="fields">
+      <input class="grow" type="text" id="ieName" maxlength="40" required>
+      <input class="num" type="number" id="iePts" min="1" max="999" inputmode="numeric" required>
+    </div>
+    <input type="text" id="ieCat" maxlength="24" list="catList" required>
+    <p class="muted small">Neue Preise gelten für neue Bestellungen. Was schon bestellt ist, bleibt beim alten Preis.</p>
+    <div class="btns">
+      <button class="btn ghost danger" type="button" data-act="itemDelete" data-confirm="Von der Karte nehmen?">Von der Karte nehmen</button>
+      <span style="flex:1"></span>
+      <button class="btn ghost" type="button" data-act="closeSheets">Abbrechen</button>
+      <button class="btn primary" type="submit">Speichern</button>
+    </div>
+  </form>
+</div>
+
+<div class="overlay" id="loginOverlay" hidden>
+  <form class="sheet" id="loginForm">
+    <h2 id="loginHead">Anmelden</h2>
+    <p class="muted small" id="loginHint"></p>
+    <input type="password" id="loginOld" placeholder="Aktuelles Passwort" autocomplete="current-password">
+    <input type="password" id="loginPw" placeholder="Passwort" autocomplete="current-password">
+    <input type="password" id="loginPw2" placeholder="Passwort wiederholen" autocomplete="new-password">
+    <div class="btns"><button class="btn ghost" type="button" id="loginCancel" data-act="loginCancel">Abbrechen</button><button class="btn primary" type="submit" id="loginSubmit">Anmelden</button></div>
+  </form>
+</div>
+
+<div class="overlay" id="profileOverlay" hidden>
+  <div class="sheet">
+    <div style="display:flex;align-items:center;gap:14px"><span id="profilePreview"></span><div style="min-width:0"><h2 id="profileName"></h2><span class="muted small">Dein Profilbild sehen alle im Café.</span></div></div>
+    <div class="label">Symbol</div>
+    <div class="pickgrid" id="iconGrid"></div>
+    <div class="label">Farbe</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" id="colorGrid"></div>
+    <div class="btns" style="justify-content:flex-start">
+      <button class="btn ghost" type="button" data-act="rename">Name ändern</button>
+      <button class="btn ghost" type="button" data-act="changePw">Passwort ändern</button>
+      <span style="flex:1"></span>
+      <button class="btn primary" type="button" data-act="closeSheets">Fertig</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="renameOverlay" hidden>
+  <form class="sheet" id="renameForm">
+    <h2>Name ändern</h2>
+    <input type="text" id="renameName" maxlength="24" required>
+    <div class="btns"><button class="btn ghost" type="button" data-act="closeSheets">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div>
+  </form>
+</div>
+
+<div class="overlay" id="memberOverlay" hidden>
+  <div class="sheet">
+    <h2 id="memberHead">Mitglied</h2>
+    <div id="memberBody" class="stack" style="gap:12px"></div>
+    <div class="btns"><button class="btn primary" type="button" data-act="closeSheets">Fertig</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="privacyOverlay" hidden>
+  <div class="sheet read" role="dialog" aria-labelledby="privacyHead">
+    <h2 id="privacyHead">Hausordnung zum Datenschutz</h2>
+    <p class="label">Gültig ab Oktober 2026 · Aushang an der Theke</p>
+    <p>Im Café Otterliebe wird ordentlich Buch geführt. Wie in jedem guten Café gilt: Der Wirt weiß, was du bestellt hast.</p>
+    <h3>Was im Buch steht</h3>
+    <ul>
+      <li>Was bestellt, serviert und mit welchem Gefallen bezahlt wurde.</li>
+      <li>Dein Name, dein Profilbild und deine Rolle.</li>
+      <li>Deine Wünsche am Wunsch-Brett und deine Meinung zu den Preisen.</li>
+    </ul>
+    <p>Alle im Café sehen dieses Buch. Der Wirt pflegt Karte, Preise und Grenze.</p>
+    <h3>Was niemand sieht</h3>
+    <ul>
+      <li>Dein Passwort. Gespeichert ist nur ein unlesbarer Fingerabdruck davon, auch der Wirt kennt es nicht.</li>
+    </ul>
+    <h3>Wo das Buch liegt</h3>
+    <ul>
+      <li><b>Bestellungen, Karte, Namen:</b> in einer Datenbank bei Google Firebase.</li>
+      <li><b>Push-Nachrichten:</b> laufen über ntfy.sh, mit Name und Gericht im Text.</li>
+      <li><b>Auf deinem Handy:</b> nur, in welchem Café du angemeldet bist.</li>
+      <li><b>Schriften:</b> kommen von Google Fonts.</li>
+    </ul>
+    <p>Keine Werbung, kein Tracking, kein Verkauf von Daten. Das Haus nimmt nur Gefallen an.</p>
+    <h3>Beschwerden</h3>
+    <p>Bitte höflich an der Theke vortragen, am besten bei einem Tee. Wer gehen möchte, sagt dem Wirt Bescheid; der Platz am Tisch wird dann frei. Was serviert wurde, bleibt im Buch.</p>
+    <div class="btns"><button class="btn primary" type="button" data-act="closeSheets">Verstanden</button></div>
+  </div>
+</div>
+
+<div id="toastHost"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { initializeFirestore, memoryLocalCache, doc, collection, getDoc, getDocs, setDoc, updateDoc, onSnapshot,
+  query, where, runTransaction, increment, deleteField } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { firebaseConfig } from "./config.js";
+
+/* =====================================================================
+   Datenmodell (gebündelt, damit wenige Lesezugriffe anfallen):
+   cafes/<CODE>                  {createdAt, pw}         – nur zum Anlegen (Gründungs-Passwort)
+   cafes/<CODE>/data/cafe        EIN Dokument: Name, Grenze, Mitglieder, Karte, Specials,
+                                 Gefallen, Wünsche, Preis-Bewertungen, Übertrag (carry)
+   cafes/<CODE>/weeks/<JJJJ-Www> EIN Dokument pro Woche: alle Bestellungen + Bezahlungen
+   Live gelesen werden das Café-Dokument und die noch nicht gefalteten Wochen (~10 Dokumente).
+   ===================================================================== */
+const OTTER = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" aria-hidden="true"><rect x="44" y="68" width="26" height="20" fill="#7A5236"/><path d="M28 120 C28 96 40 82 60 82 C80 82 92 96 92 120 Z" fill="#7A5236"/><path d="M48 84 L60 104 L72 84 C68 82 64 81 60 81 C56 81 52 82 48 84 Z" fill="#FFFFFF"/><path d="M52 86 L60 90 L52 94 Z M68 86 L60 90 L68 94 Z" fill="#B3186B"/><circle cx="60" cy="90" r="2.4" fill="#8E1155"/><path d="M88 96 C96 92 100 84 100 74" stroke="#7A5236" stroke-width="9" stroke-linecap="round" fill="none"/><ellipse cx="100" cy="72" rx="6" ry="4.5" fill="#6A4630"/><rect x="84" y="66" width="34" height="4" rx="2" fill="#C9C2CC"/><path d="M95 52 h14 v10 a4 4 0 0 1 -4 4 h-6 a4 4 0 0 1 -4 -4 Z" fill="#FFFFFF" stroke="#B3186B" stroke-width="1.6"/><path d="M109 55 a3.5 3.5 0 0 1 0 7" stroke="#B3186B" stroke-width="1.6" fill="none"/><path d="M99 48 c-2 -3 2 -5 0 -8 M105 48 c-2 -3 2 -5 0 -8" stroke="#C9A27E" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="29" cy="44" r="5.5" fill="#6A4630"/><circle cx="85" cy="44" r="5.5" fill="#6A4630"/><ellipse cx="57" cy="54" rx="31" ry="24" fill="#7A5236"/><path d="M30 58 C32 44 44 40 57 40 C70 40 82 44 84 58 C82 72 70 78 57 78 C44 78 32 72 30 58 Z" fill="#E7CBAE"/><path d="M38 42 C44 34 70 34 76 42 C70 39 44 39 38 42 Z" fill="#7A5236"/><circle cx="46" cy="50" r="3.4" fill="#2B2230"/><circle cx="68" cy="50" r="3.4" fill="#2B2230"/><circle cx="47.2" cy="48.8" r="1.1" fill="#FFFFFF"/><circle cx="69.2" cy="48.8" r="1.1" fill="#FFFFFF"/><ellipse cx="57" cy="59" rx="6" ry="4" fill="#3A2418"/><path d="M51 65 q3 3 6 0 q3 3 6 0" stroke="#3A2418" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="47" cy="63" r=".9" fill="#7A5236"/><circle cx="44" cy="61" r=".9" fill="#7A5236"/><circle cx="67" cy="63" r=".9" fill="#7A5236"/><circle cx="70" cy="61" r=".9" fill="#7A5236"/><path d="M42 63 l-14 -3 M42 66 l-14 2 M72 63 l14 -3 M72 66 l14 2" stroke="#5A3A26" stroke-width="1.1" stroke-linecap="round"/><circle cx="39" cy="58" r="3" fill="#F2A7C6" opacity=".6"/><circle cx="75" cy="58" r="3" fill="#F2A7C6" opacity=".6"/></svg>`;
+const THUMB = `<svg viewBox="0 0 24 24"><path d="M7 11v9H4v-9Z"/><path d="M7 11l4-7a2 2 0 0 1 3 2l-1 4h6a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 1H7"/></svg>`;
+const THUMBDOWN = `<svg viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="M7 11v9H4v-9Z"/><path d="M7 11l4-7a2 2 0 0 1 3 2l-1 4h6a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 1H7"/></svg>`;
+const ICONS = ["🦦","🐱","🐶","🦊","🐼","🐨","🐸","🦁","🐰","🐻","🐧","🦉","🐢","🦄","🌻","🌵","🍓","🍰","☕","🍫","🧁","🫖","🍪","🎸","🚀","🌈","⭐","🌙"];
+const COLORS = ["#B3186B","#7A5236","#1F6F78","#B4541E","#3E5BA9","#4F7A28","#8A3B3B","#5B5F97","#2F7D6D","#9A6A00"];
+const DAYS = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+const PREFS = {
+  order:"Neue Bestellung", served:"Bestellung ist fertig", confirm:"Etwas wartet auf meine Bestätigung",
+  limit:"Rechnung fällig (Grenze erreicht)", newItem:"Neues Gericht auf der Karte", newSpecial:"Neues Special",
+  reminder:"Erinnerung an wiederkehrende Specials"
+};
+const FOLD_WEEKS = 10;   // Wochen, die live bleiben; ältere werden in den Übertrag gefaltet
+
+const S = { cafe:null, me:null, tab:"karte", info:null, weeks:{}, ready:{} };
+let fs=null, unsubs=[], edit=null, login=null, openMemberId=null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = {
+  get(k){ try{ return localStorage.getItem(k) }catch(e){ return store.mem[k] ?? null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch(e){ store.mem[k]=v } },
+  del(k){ try{ localStorage.removeItem(k) }catch(e){ delete store.mem[k] } }, mem:{}
+};
+const ALPH="ABCDEFGHJKLMNPQRSTUVWXYZ23456789", LOW="abcdefghijkmnpqrstuvwxyz23456789";
+function rnd(n, a=ALPH){ const r=crypto.getRandomValues(new Uint32Array(n)); return [...r].map(x=>a[x%a.length]).join("") }
+const newId = () => rnd(12, LOW);
+const fmtCode = c => c ? c.slice(0,4)+"-"+c.slice(4) : "";
+const normCode = s => String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+const cafeRef = () => doc(fs,"cafes",S.cafe,"data","cafe");
+const weekRef = k => doc(fs,"cafes",S.cafe,"weeks",k);
+const pts = n => `${n} ${Math.abs(n)===1?"Punkt":"Punkte"}`;
+
+/* ---------- Zeit ---------- */
+// ISO-Kalenderwoche als Schlüssel, z. B. "2026-W43"
+function weekKey(t){ const d=new Date(t); d.setHours(0,0,0,0); d.setDate(d.getDate()+3-((d.getDay()+6)%7));
+  const w1=new Date(d.getFullYear(),0,4); const wk=1+Math.round(((d-w1)/864e5-3+((w1.getDay()+6)%7))/7);
+  return d.getFullYear()+"-W"+String(wk).padStart(2,"0") }
+function weekStart(t){ const d=new Date(t); d.setHours(0,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7)); return d.getTime() }
+function when(t){ if(!t) return ""; const d=new Date(t), now=new Date(); const y=new Date(now); y.setDate(now.getDate()-1); const tm=new Date(now); tm.setDate(now.getDate()+1);
+  const time=d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  if (d.toDateString()===now.toDateString()) return "heute "+time;
+  if (d.toDateString()===y.toDateString()) return "gestern "+time;
+  if (d.toDateString()===tm.toDateString()) return "morgen "+time;
+  return d.toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})+" "+time }
+function countdown(ms){ if(ms<=0) return "abgelaufen"; const s=Math.floor(ms/1000), d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60), x=s%60;
+  const hh=String(h).padStart(2,"0"), mm=String(m).padStart(2,"0"), ss=String(x).padStart(2,"0");
+  return d>0 ? `noch ${d} T ${hh}:${mm}:${ss}` : `noch ${hh}:${mm}:${ss}` }
+const localInput = t => { const d=new Date(t-new Date(t).getTimezoneOffset()*6e4); return d.toISOString().slice(0,16) };
+
+/* ---------- Abgeleitete Daten ---------- */
+const info = () => S.info || {};
+const membersMap = () => info().members || {};
+const members = () => Object.entries(membersMap()).map(([id,m])=>({id,...m})).sort((a,b)=>((b.role==="wirt")-(a.role==="wirt"))||((a.joinedAt||0)-(b.joinedAt||0)));
+const memberOf = id => { const m=membersMap()[id]; return m ? {id,...m} : null };
+const nameOf = id => (memberOf(id)||{}).name || "Jemand";
+const isWirt = id => (memberOf(id)||{}).role==="wirt";
+const iAmWirt = () => !!S.me && isWirt(S.me);
+const wirte = () => members().filter(m=>m.role==="wirt").map(m=>m.id);
+const gaeste = () => members().filter(m=>m.role!=="wirt").map(m=>m.id);
+const limitPts = () => info().limit || 100;
+function allOrders(){ const out=[]; for (const [wk,w] of Object.entries(S.weeks)) for (const [id,o] of Object.entries(w.orders||{})) out.push({id,wk,...o}); return out }
+function allPayments(){ const out=[]; for (const [wk,w] of Object.entries(S.weeks)) for (const [id,p] of Object.entries(w.payments||{})) out.push({id,wk,...p}); return out }
+// Deckel = Übertrag + servierte Bestellungen − bezahlte Gefallen
+function deckel(uid){ let d=(info().carry||{})[uid]||0;
+  for (const o of allOrders()) if (o.by===uid && o.status==="served") d+=o.points||0;
+  for (const p of allPayments()) if (p.by===uid && p.status==="paid") d-=p.value||0;
+  return d }
+const isDue = o => o.status==="open" && (!o.forAt || o.forAt <= Date.now()+15*60e3);
+function specialActive(sp, now=Date.now()){ if (sp.kind==="weekly") return new Date(now).getDay()===Number(sp.weekday); return sp.until>now }
+
+function colorFor(id){ let h=0; for (const c of String(id)) h=(h*31+c.charCodeAt(0))>>>0; return COLORS[h%COLORS.length] }
+function av(id, size=""){ const m=memberOf(id), n=nameOf(id), col=(m&&m.color)||colorFor(id), ic=m&&m.icon;
+  return `<span class="av ${size} ${ic?"emo":""}" style="background:${esc(col)}">${ic?esc(ic):esc((n[0]||"?").toUpperCase())}</span>` }
+
+/* ---------- Hilfen ---------- */
+function toast(msg, undo){ const h=$("toastHost"); h.innerHTML=""; const t=document.createElement("div"); t.className="toast";
+  const s=document.createElement("span"); s.textContent=msg; t.appendChild(s);
+  if (undo){ const b=document.createElement("button"); b.textContent="Rückgängig"; b.onclick=()=>{ h.innerHTML=""; undo() }; t.appendChild(b) }
+  h.appendChild(t); clearTimeout(toast._t); toast._t=setTimeout(()=>{ if(t.parentNode) h.innerHTML="" },5000) }
+function showStatus(m){ const s=$("status"); s.textContent=m||""; s.hidden=!m }
+function timeout(p, ms=12000){ return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej({code:"timeout"}),ms))]) }
+// Schreibt im Hintergrund; Fehler werden verständlich gemeldet
+function w(promise){ promise.catch(e=>{ console.error(e);
+  if (e&&e.code==="permission-denied") toast("Keine Berechtigung. Prüfe die Firestore-Regeln (siehe Anleitung).");
+  else if (e&&e.code==="resource-exhausted") toast("Das kostenlose Tageslimit ist erreicht. Morgen geht es weiter.");
+  else toast("Das hat nicht geklappt. Bitte nochmal versuchen."); }); return true }
+const upd = patch => w(updateDoc(cafeRef(), patch));
+async function pwHash(pw, cafe, mid){
+  const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveBits"]);
+  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:new TextEncoder().encode("oc|"+cafe+"|"+mid),iterations:150000},key,256);
+  return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,"0")).join("") }
+async function sha(t){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("") }
+
+/* ---------- Push über ntfy ---------- */
+const appUrl = () => { const u=new URL(location.href); u.search=""; u.hash=""; return u.toString() };
+function sendNtfy(topic, title, msg, at){
+  let u=`https://ntfy.sh/${encodeURIComponent(topic)}?title=${encodeURIComponent(title)}&tags=coffee&click=${encodeURIComponent(appUrl())}`;
+  if (at) u += `&delay=${Math.floor(at/1000)}`;
+  return fetch(u,{method:"POST",body:msg,headers:{"Content-Type":"text/plain"}}) }
+const wants = (m, pref) => !!(m && m.ntfy && (!m.notify || m.notify[pref]!==false));
+// Push an die genannten Personen (nie an dich selbst), sofern sie diese Art Nachricht wollen
+function push(ids, pref, title, msg){
+  for (const id of new Set(ids.filter(Boolean))){ if (id===S.me) continue; const m=memberOf(id); if (wants(m,pref)) sendNtfy(m.ntfy,title,msg).catch(()=>{}) } }
+const others = () => members().map(m=>m.id).filter(id=>id!==S.me);
+
+/* ---------- Bildschirme ---------- */
+function show(screen){ for (const id of ["screenStart","screenWho","screenApp"]) $(id).hidden=id!==screen;
+  $("tabs").hidden = screen!=="screenApp"; document.body.classList.toggle("noTabs", screen!=="screenApp") }
+function route(){
+  $("cafeName").textContent = info().name || "Café Otterliebe";
+  if (!S.cafe){ show("screenStart"); $("meChip").innerHTML=""; $("roleLine").textContent=""; return }
+  if (!S.ready.cafe) return;
+  if (!memberOf(S.me)){ show("screenWho"); renderWho(); $("meChip").innerHTML=""; $("roleLine").textContent=""; return }
+  show("screenApp"); render();
+  if (!memberOf(S.me).pwHash && !login) openLogin("set", S.me, true);
+  setTimeout(maintenance, 2500);
+}
+function renderWho(){
+  const ms=members();
+  $("whoList").innerHTML = ms.length ? ms.map(m=>`<button class="row" data-act="iam" data-id="${m.id}">${av(m.id)}<span class="main"><span class="t">${esc(m.name)}</span><span class="s">${m.role==="wirt"?"Wirt":"Gast"} · mit Passwort anmelden</span></span></button>`).join("")
+    : `<div class="empty">Hier sitzt noch niemand.</div>`;
+}
+
+/* ---------- Anzeige ---------- */
+function render(){
+  const wirt=iAmWirt(), me=memberOf(S.me);
+  $("meChip").innerHTML = `${av(S.me)}<span>${esc(me.name)}</span>`;
+  $("roleLine").textContent = wirt ? "Du stehst hinter der Theke" : "Du bist zu Gast";
+  renderKarte(wirt); renderOrders(wirt); renderDeckel(wirt); renderCafe(wirt);
+}
+
+function renderKarte(wirt){
+  const now=Date.now(), sp=Object.entries(info().specials||{}).map(([id,s])=>({id,...s}));
+  const active=sp.filter(s=>specialActive(s,now)).sort((a,b)=>(a.until||0)-(b.until||0));
+  const soon=sp.filter(s=>!specialActive(s,now) && (s.kind==="weekly" || s.until>now));
+  const spRow = (s,on) => `<div class="special ${on?"":"soon"}">
+      <div class="main"><span class="pill" style="${on?"background:var(--surface);color:var(--butter-ink)":""}">${s.kind==="weekly"?`Jeden ${DAYS[s.weekday]}`:"Special"}</span>
+        <span class="t">${esc(s.title)}</span>
+        <span class="s">${s.note?esc(s.note)+" · ":""}${on ? (s.kind==="weekly"?"Heute im Angebot":`<span class="count" data-until="${s.until}">${countdown(s.until-now)}</span>`) : (s.kind==="weekly"?`Wieder am ${DAYS[s.weekday]}`:"")}</span></div>
+      <span class="pts">${s.points} P</span>
+      <span class="actions">${!wirt&&on?`<button class="btn primary" data-act="order" data-kind="special" data-id="${s.id}">Bestellen</button>`:""}
+        ${wirt?`<button class="btn sm ghost danger" data-act="spDelete" data-id="${s.id}" data-confirm="Löschen?">Entfernen</button>`:""}</span></div>`;
+  $("specials").innerHTML = (active.length?`<div class="sechead"><h2>Heute im Angebot</h2></div>`+active.map(s=>spRow(s,true)).join(""):"")
+    + (soon.length?`<div class="sechead" style="margin-top:6px"><h3>Demnächst</h3></div>`+soon.map(s=>spRow(s,false)).join(""):"");
+  // Speisekarte nach Kategorien
+  const items=Object.entries(info().menu||{}).map(([id,it])=>({id,...it}));
+  const cats=[...new Set(items.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)).map(i=>i.cat||"Sonstiges"))];
+  $("catList").innerHTML = cats.map(c=>`<option value="${esc(c)}">`).join("");
+  const ratings=info().ratings||{};
+  const dish = it => { const r=ratings[it.id]||{}, mine=r[S.me]; const up=Object.values(r).filter(v=>v===1).length, down=Object.values(r).filter(v=>v===-1).length;
+    return `<div class="dish"><div class="line"><span class="name">${esc(it.name)}</span><span class="dots"></span><span class="pts">${it.points}</span></div>
+      <div class="tools">${wirt
+        ? `<span class="fair">${up||down?`Preis: ${up?`${up}× fair`:""}${up&&down?", ":""}${down?`${down}× zu teuer`:""}`:"Noch keine Preis-Meinung"}</span><span style="flex:1"></span><button class="btn sm ghost" data-act="itemEdit" data-id="${it.id}">Bearbeiten</button>`
+        : `<button class="vote" data-act="vote" data-id="${it.id}" data-v="1" aria-pressed="${mine===1}" aria-label="Fairer Preis">${THUMB}fair</button><button class="vote down" data-act="vote" data-id="${it.id}" data-v="-1" aria-pressed="${mine===-1}" aria-label="Zu teuer">${THUMBDOWN}zu teuer</button><span style="flex:1"></span><button class="btn sm primary" data-act="order" data-kind="item" data-id="${it.id}">Bestellen</button>`}</div></div>` };
+  $("menu").innerHTML = items.length ? `<div class="menu"><div style="text-align:center"><div class="label">Speisekarte</div><h2>${esc(info().name||"Café Otterliebe")}</h2></div>`
+    + cats.map(c=>`<div class="stack" style="gap:12px"><h3>${esc(c)}</h3>${items.filter(i=>(i.cat||"Sonstiges")===c).sort((a,b)=>a.points-b.points).map(dish).join("")}</div>`).join("") + `</div>`
+    : `<div class="card"><div class="otterbox"><span class="ot" data-otter></span><p>${wirt?"Die Karte ist noch leer. Setz unten das erste Gericht drauf.":"Die Karte wird gerade geschrieben. Der Wirt ist dran."}</p></div></div>`;
+  $("wirtAddItem").hidden = !wirt; $("wirtAddSpecial").hidden = !wirt;
+  // Wunsch-Brett
+  const ws=Object.entries(info().wishes||{}).map(([id,x])=>({id,...x})).sort((a,b)=>((a.status==="open")?0:1)-((b.status==="open")?0:1)||(b.at||0)-(a.at||0)).slice(0,30);
+  const st={open:["offen",""],done:["erfüllt","mint"],declined:["leider nicht","butter"]};
+  $("wishes").innerHTML = ws.length ? ws.map(x=>`<div class="row">${av(x.by)}<span class="main"><span class="t">${esc(x.text)}</span><span class="s">${esc(nameOf(x.by))} · ${when(x.at)}</span></span>
+      <span class="pill ${st[x.status||"open"][1]}">${st[x.status||"open"][0]}</span>
+      <span class="actions">${wirt&&x.status==="open"?`<button class="btn sm" data-act="wishToMenu" data-id="${x.id}">Auf die Karte</button><button class="btn sm" data-act="wishStatus" data-v="done" data-id="${x.id}">Erfüllt</button><button class="btn sm ghost" data-act="wishStatus" data-v="declined" data-id="${x.id}">Leider nicht</button>`:""}
+      ${x.by===S.me||wirt?`<button class="btn sm ghost danger" data-act="wishDelete" data-id="${x.id}" data-confirm="Abnehmen?">Abnehmen</button>`:""}</span></div>`).join("")
+    : `<div class="empty">Noch keine Wünsche angeheftet.</div>`;
+}
+
+function orderRow(o, wirt){
+  const late = o.forAt && o.forAt > Date.now()+15*60e3;
+  let btns="";
+  if (o.status==="open"){
+    if (wirt) btns=`<button class="btn sm ghost" data-act="decline" data-id="${o.id}" data-confirm="Wirklich ablehnen?">Ablehnen</button><button class="btn sm primary" data-act="serve" data-id="${o.id}">Fertig, servieren</button>`;
+    else if (o.by===S.me) btns=`<button class="btn sm ghost danger" data-act="cancel" data-id="${o.id}" data-confirm="Stornieren?">Stornieren</button>`;
+  }
+  const stat = {open: late?`vorbestellt für ${when(o.forAt)}`:(o.forAt?`für ${when(o.forAt)}`:"wird zubereitet"), served:`serviert ${when(o.servedAt)}`, declined:"abgelehnt", cancelled:"storniert"}[o.status];
+  return `<div class="row">${av(o.by)}<span class="main"><span class="t">${esc(o.name)}${o.special?` <span class="pill butter">Special</span>`:""}</span>
+    <span class="s">${esc(nameOf(o.by))} · bestellt ${when(o.at)}${o.note?` · „${esc(o.note)}“`:""} · ${stat}</span></span>
+    <span class="pts">${o.points} P</span>${btns?`<span class="actions">${btns}</span>`:""}</div>` }
+function renderOrders(wirt){
+  const os=allOrders().filter(o=>wirt || o.by===S.me);
+  const now=os.filter(o=>isDue(o)).sort((a,b)=>(a.forAt||a.at)-(b.forAt||b.at));
+  const later=os.filter(o=>o.status==="open" && !isDue(o)).sort((a,b)=>a.forAt-b.forAt);
+  const done=os.filter(o=>o.status!=="open").sort((a,b)=>(b.servedAt||b.at)-(a.servedAt||a.at)).slice(0,25);
+  $("ordersNow").innerHTML = `<div class="sechead"><h2>${wirt?"An der Theke":"Deine Bestellungen"}</h2><span class="label">${now.length?now.length+" offen":""}</span></div>`
+    + (now.length ? `<div class="list">${now.map(o=>orderRow(o,wirt)).join("")}</div>` : `<div class="card"><div class="otterbox"><span class="ot" data-otter></span><p>${wirt?"Gerade ist nichts zu tun. Zeit für einen eigenen Tee.":"Nichts in Arbeit. Auf der Karte findest du etwas Leckeres."}</p></div></div>`);
+  $("ordersLater").innerHTML = later.length ? `<div class="sechead"><h2>Vorbestellt</h2><span class="label">${later.length}</span></div><div class="list">${later.map(o=>orderRow(o,wirt)).join("")}</div>` : "";
+  $("ordersDone").innerHTML = done.length ? `<div class="sechead"><h2>Zuletzt</h2></div><div class="list">${done.map(o=>orderRow(o,wirt)).join("")}</div>` : "";
+  const badge = wirt ? allOrders().filter(isDue).length : 0;
+  $("badgeOrders").hidden=!badge; $("badgeOrders").textContent=badge;
+}
+
+function deckelCard(uid, own){
+  const d=deckel(uid), lim=limitPts(), due=d>=lim, pct=Math.max(0,Math.min(100,Math.round(d/lim*100)));
+  return `<div class="tab ${due?"due":""}">
+    <div class="sechead"><span class="label">${own?"Dein Deckel":"Deckel von "+esc(nameOf(uid))}</span>${due?`<span class="pill">Rechnung fällig</span>`:""}</div>
+    <div class="big">${Math.abs(d)}<small>${d<0?"Punkte Guthaben":`von ${lim} Punkten`}</small></div>
+    <div class="bar" aria-hidden="true"><i style="width:${pct}%"></i></div>
+    <p class="muted small">${due ? (own?"Zeit, die Rechnung mit einem Gefallen zu begleichen. Bestellen geht trotzdem weiter.":"Die Rechnung ist fällig.")
+      : d<0 ? "Der Gefallen war mehr wert als der Deckel. Das Guthaben wird mit den nächsten Bestellungen verrechnet."
+      : `Noch ${lim-d} Punkte bis zur Rechnung.`}</p></div>` }
+function renderDeckel(wirt){
+  const gs=gaeste();
+  $("deckelTop").innerHTML = wirt
+    ? (gs.length ? gs.map(id=>deckelCard(id,false)).join("") : `<div class="empty">Noch keine Gäste im Café. Lade unter „Café“ jemanden ein.</div>`)
+    : deckelCard(S.me,true);
+  // Gefallen
+  const favs=Object.entries(info().favors||{}).map(([id,f])=>({id,...f})).filter(f=>f.status!=="declined" || wirt).sort((a,b)=>a.value-b.value);
+  $("favors").innerHTML = favs.length ? favs.map(f=>{
+    let btns="", stat="";
+    if (f.status==="offered"){ stat=`<span class="pill butter">wartet auf den Gast</span>`;
+      btns = wirt ? `<button class="btn sm ghost danger" data-act="favDelete" data-id="${f.id}" data-confirm="Zurückziehen?">Zurückziehen</button>`
+                  : `<button class="btn sm ghost" data-act="favAnswer" data-v="declined" data-id="${f.id}">Lieber nicht</button><button class="btn sm primary" data-act="favAnswer" data-v="accepted" data-id="${f.id}">Angebot annehmen</button>`;
+    } else if (f.status==="accepted"){ stat=`<span class="pill mint">angenommen</span>`;
+      btns = (wirt ? "" : `<button class="btn sm primary" data-act="pay" data-id="${f.id}" data-confirm="Damit bezahlen?">Damit bezahlen</button>`)
+        + (wirt ? `<button class="btn sm ghost danger" data-act="favDelete" data-id="${f.id}" data-confirm="Entfernen?">Entfernen</button>` : "");
+    } else { stat=`<span class="pill">abgelehnt</span>`; btns = wirt ? `<button class="btn sm ghost danger" data-act="favDelete" data-id="${f.id}">Entfernen</button>` : "" }
+    return `<div class="row"><span class="main"><span class="t">${esc(f.title)}</span>${stat}</span><span class="plus">−${f.value}</span>${btns?`<span class="actions">${btns}</span>`:""}</div>` }).join("")
+    : `<div class="empty">${wirt?"Noch keine Gefallen angeboten. Leg unten den ersten an, z. B. „Kleines Date“.":"Der Wirt hat noch keine Gefallen angeboten."}</div>`;
+  $("favorForm").hidden = !wirt;
+  // Badge: Gast sieht offene Angebote und fällige Rechnung
+  const badge = wirt ? 0 : favs.filter(f=>f.status==="offered").length + (deckel(S.me)>=limitPts()?1:0);
+  $("badgeDeckel").hidden=!badge; $("badgeDeckel").textContent=badge;
+  renderReview(); renderHistory(wirt);
+}
+function renderHistory(wirt){
+  const rows=[...allOrders().filter(o=>o.status==="served").map(o=>({...o,h:"o",t:o.servedAt||o.at})),
+              ...allPayments().map(p=>({...p,h:"p",t:p.at}))]
+    .filter(x=>wirt || x.by===S.me).sort((a,b)=>b.t-a.t).slice(0,60);
+  $("history").innerHTML = rows.length ? rows.map(x=> x.h==="o"
+    ? `<div class="row">${av(x.by)}<span class="main"><span class="t">${esc(x.name)}</span><span class="s">${esc(nameOf(x.by))} · serviert ${when(x.t)}</span></span><span class="pts">+${x.points}</span></div>`
+    : `<div class="row">${av(x.by)}<span class="main"><span class="t">Bezahlt mit: ${esc(x.title)}</span><span class="s">${esc(nameOf(x.by))} · ${when(x.t)}${x.status==="undone"?" · zurückgenommen":""}</span></span>
+        <span class="${x.status==="undone"?"muted":"plus"}" style="${x.status==="undone"?"text-decoration:line-through":""}">−${x.value}</span>
+        ${x.status==="paid"?`<span class="actions"><button class="btn sm ghost" data-act="payUndo" data-id="${x.id}" data-wk="${x.wk}" data-confirm="Zurücknehmen?">Zurücknehmen</button></span>`:""}</div>`).join("")
+    : `<div class="empty">Noch nichts serviert.</div>`;
+  const anyCarry = Object.values(info().carry||{}).some(v=>v);
+  $("olderBox").innerHTML = anyCarry ? `<p class="muted small">Ältere Wochen sind im Übertrag zusammengefasst. Ihre Punkte stecken schon im Deckel.</p>` : "";
+}
+// Monatsrückblick: Liebling des Monats, Anzahl, Punkte, Gefallen
+let reviewMonth = 0;
+function monthBounds(offset){ const d=new Date(); d.setDate(1); d.setHours(0,0,0,0); d.setMonth(d.getMonth()-offset); const a=d.getTime(); d.setMonth(d.getMonth()+1); return [a,d.getTime()] }
+function monthStats(offset){ const [a,b]=monthBounds(offset);
+  const served=allOrders().filter(o=>o.status==="served" && (o.servedAt||o.at)>=a && (o.servedAt||o.at)<b);
+  const paid=allPayments().filter(p=>p.status==="paid" && p.at>=a && p.at<b);
+  const cnt={}; for (const o of served) cnt[o.name]=(cnt[o.name]||0)+1;
+  const top=Object.entries(cnt).sort((x,y)=>y[1]-x[1])[0];
+  return { label:new Date(a).toLocaleDateString("de-DE",{month:"long",year:"numeric"}), n:served.length, points:served.reduce((s,o)=>s+(o.points||0),0),
+           top, favors:paid.length, favorPts:paid.reduce((s,p)=>s+(p.value||0),0) } }
+function renderReview(){
+  const m=monthStats(reviewMonth);
+  $("reviewSeg").innerHTML = [0,1].map(i=>`<button class="btn sm ${i===reviewMonth?"primary":"ghost"}" data-act="reviewMonth" data-v="${i}">${monthStats(i).label}</button>`).join("");
+  $("reviewLabel").textContent = m.label;
+  $("review").innerHTML = m.n||m.favors ? `<div class="review">
+      <div class="k wide"><span class="label">Liebling des Monats</span><b>${m.top?esc(m.top[0]):"–"}</b><span class="small muted">${m.top?m.top[1]+"× serviert":""}</span></div>
+      <div class="k"><span class="label">Serviert</span><b>${m.n}</b><span class="small muted">${pts(m.points)}</span></div>
+      <div class="k"><span class="label">Gefallen</span><b>${m.favors}</b><span class="small muted">${pts(m.favorPts)} beglichen</span></div></div>`
+    : `<div class="empty">In diesem Monat wurde noch nichts serviert.</div>`;
+}
+
+function renderCafe(wirt){
+  const ms=members();
+  $("memberCount").textContent = ms.length;
+  $("members").innerHTML = ms.map(m=>`<div class="row">${av(m.id,"lg")}<span class="main"><span class="t">${esc(m.name)}${m.id===S.me?" (du)":""}</span><span class="s">${m.role==="wirt"?"Wirt":"Gast"}${m.role!=="wirt"?(deckel(m.id)<0?` · Guthaben ${-deckel(m.id)} P`:` · Deckel ${deckel(m.id)} P`):""}</span></span>
+    <span class="actions">${m.id===S.me?`<button class="btn sm ghost" data-act="profile">Mein Profil</button>`:""}${wirt?`<button class="btn sm ghost" data-act="manage" data-id="${m.id}">Verwalten</button>`:""}</span></div>`).join("");
+  $("cafeCode").textContent = fmtCode(S.cafe);
+  $("inviteLink").textContent = inviteUrl();
+  $("settingsCard").hidden = !wirt;
+  if (wirt){ if (document.activeElement!==$("cafeNameInput")) $("cafeNameInput").value=info().name||"";
+             if (document.activeElement!==$("limitInput")) $("limitInput").value=limitPts() }
+  renderPush();
+  if (openMemberId) renderMemberSheet();
+  if (!$("profileOverlay").hidden) renderProfile();
+}
+function inviteUrl(){ const u=new URL(location.href); u.search="?c="+S.cafe; u.hash=""; return u.toString() }
+
+function renderPush(){
+  const me=memberOf(S.me); if(!me) return;
+  if (!me.ntfy){ $("pushCard").innerHTML = `<h3>Push-Nachrichten</h3><p class="muted small">Der Otter klopft ans Handy, wenn etwas für dich ansteht, auch bei geschlossener App. Kostenlos über die App „ntfy“.</p><div><button class="btn primary" data-act="pushOn">Push einrichten</button></div>`; return }
+  const n=me.notify||{};
+  $("pushCard").innerHTML = `<h3>Push-Nachrichten</h3>
+    <ol class="steps"><li>Installiere die kostenlose App <b>ntfy</b>.</li><li>Tippe dort auf <b>+</b> und trage dieses Thema ein (Server ntfy.sh):</li></ol>
+    <div class="topic">${esc(me.ntfy)}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-act="copyTopic">Thema kopieren</button><button class="btn sm primary" data-act="pushTest">Test senden</button><button class="btn sm ghost danger" data-act="pushOff" data-confirm="Ausschalten?">Ausschalten</button></div>
+    <div class="label" style="margin-top:6px">Bescheid geben bei</div>
+    <div>${Object.entries(PREFS).map(([k,l])=>`<label class="toggle"><span>${l}</span><input type="checkbox" data-pref="${k}" ${n[k]!==false?"checked":""}></label>`).join("")}</div>
+    <p class="muted small">Das Thema ist dein persönlicher Kanal. Gib es nicht weiter.</p>`;
+}
+function renderMemberSheet(){
+  const m=memberOf(openMemberId); if(!m||!iAmWirt()){ closeSheets(); return }
+  const lastWirt = m.role==="wirt" && wirte().length<=1;
+  $("memberHead").textContent = m.id===S.me ? m.name+" (du)" : m.name;
+  $("memberBody").innerHTML = `<label class="toggle"><span><b>Wirt</b><span class="muted small">Pflegt Karte, Preise, Grenze und Gefallen.${lastWirt?" Ein Café braucht mindestens einen Wirt.":""}</span></span><input type="checkbox" data-role="${m.id}" ${m.role==="wirt"?"checked":""} ${lastWirt?"disabled":""}></label>
+    ${m.id!==S.me?`<div style="display:flex;gap:6px;flex-wrap:wrap">${m.pwHash?`<button class="btn sm ghost" data-act="resetPw" data-id="${m.id}" data-confirm="Zurücksetzen?">Passwort zurücksetzen</button>`:`<span class="muted small">Hat noch kein Passwort.</span>`}
+      <button class="btn sm ghost danger" data-act="removeMember" data-id="${m.id}" data-confirm="Wirklich entfernen?">Aus dem Café entfernen</button></div>`:""}`;
+}
+function renderProfile(){ const m=memberOf(S.me); if(!m) return;
+  $("profilePreview").innerHTML=av(S.me,"xl"); $("profileName").textContent=m.name; const col=m.color||colorFor(S.me);
+  $("iconGrid").innerHTML = `<button class="pick" data-act="pickIcon" data-v="" aria-pressed="${!m.icon}" aria-label="Anfangsbuchstabe" style="font-family:var(--display);font-weight:800;font-size:18px">${esc((m.name[0]||"?").toUpperCase())}</button>`
+    + ICONS.map(ic=>`<button class="pick" data-act="pickIcon" data-v="${ic}" aria-pressed="${m.icon===ic}">${ic}</button>`).join("");
+  $("colorGrid").innerHTML = COLORS.map(c=>`<button class="swatch" data-act="pickColor" data-v="${c}" style="background:${c}" aria-pressed="${col===c}" aria-label="Farbe ${c}"></button>`).join("") }
+
+function setTab(t){ S.tab=t; document.querySelectorAll(".view").forEach(v=>v.hidden=v.dataset.view!==t);
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.dataset.tab===t?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+  store.set("oc_tab",t); window.scrollTo(0,0) }
+function closeSheets(){ for (const id of ["orderOverlay","itemOverlay","profileOverlay","renameOverlay","memberOverlay","privacyOverlay"]) $(id).hidden=true; openMemberId=null; edit=null; if(login&&!login.forced) closeLogin() }
+// Otter überall einsetzen, wo data-otter steht
+const fillOtters = () => document.querySelectorAll("[data-otter]:empty").forEach(e=>e.innerHTML=OTTER);
+new MutationObserver(fillOtters).observe(document.body,{childList:true,subtree:true});
+$("brandOtter").innerHTML = OTTER; fillOtters();
+// Countdown jede Sekunde; abgelaufene Specials verschwinden
+setInterval(()=>{ let expired=false; document.querySelectorAll("[data-until]").forEach(e=>{ const ms=+e.dataset.until-Date.now(); e.textContent=countdown(ms); if(ms<=0) expired=true });
+  if (expired && S.info && memberOf(S.me)) render() }, 1000);
+
+/* ---------- Café betreten, Live-Verbindung ---------- */
+function enterCafe(code){
+  for (const u of unsubs) u(); unsubs=[];
+  S.cafe=code; S.info=null; S.weeks={}; S.ready={};
+  S.me = code ? store.get("oc_member_"+code) : null;
+  if (code) store.set("oc_cafe", code); else store.del("oc_cafe");
+  route(); if (code) subscribe();
+}
+let subGen=0, connErr=false;
+function subscribe(){
+  for (const u of unsubs) u(); unsubs=[]; if(!S.cafe) return;
+  const gen=++subGen;
+  let firstC=true, firstW=true;
+  const onErr = e => { if(gen!==subGen) return; console.error(e); connErr=true;
+    showStatus(e.code==="permission-denied"?"Kein Zugriff. Gibt es das Café, und sind die Firestore-Regeln eingetragen?":"Verbindung unterbrochen. Sie wird automatisch neu aufgebaut.") };
+  unsubs.push(onSnapshot(cafeRef(), snap => { if(gen!==subGen) return;
+    if (!snap.exists()){ showStatus("Dieses Café gibt es nicht (mehr)."); return }
+    const prev=S.info; S.info=snap.data(); S.ready.cafe=true; ok();
+    if (!firstC && prev) notifyCafe(prev, S.info); firstC=false; safeRoute() }, onErr));
+  unsubs.push(onSnapshot(query(collection(fs,"cafes",S.cafe,"weeks"), where("folded","==",false)), snap => { if(gen!==subGen) return;
+    const prevOrders = firstW ? null : allOrders();
+    S.weeks={}; snap.docs.forEach(d=>S.weeks[d.id]=d.data()); S.ready.weeks=true; ok();
+    if (prevOrders) notifyOrders(prevOrders, allOrders()); firstW=false; safeRoute() }, onErr));
+  function ok(){ if(connErr){ connErr=false; showStatus("") } }
+}
+function safeRoute(){ try{ route() }catch(e){ console.error(e); showStatus("Anzeigefehler: "+(e&&e.message||e)+". Bitte die App neu laden.") } }
+// Meldungen in der App (zusätzlich zu Push), nur für Änderungen anderer
+function notifyOrders(prev, cur){ const p=new Map(prev.map(o=>[o.id,o]));
+  for (const o of cur){ const was=p.get(o.id);
+    if (!was && o.by!==S.me && iAmWirt()) toast(`Neue Bestellung: ${o.name} für ${nameOf(o.by)}`);
+    if (was && was.status!=="served" && o.status==="served" && o.by===S.me) toast(`Serviert: ${o.name}. Lass es dir schmecken!`) } }
+function notifyCafe(prev, cur){
+  const pf=prev.favors||{}, cf=cur.favors||{};
+  if (!iAmWirt()) for (const [id,f] of Object.entries(cf)) if (!pf[id] && f.status==="offered") toast(`Neues Angebot vom Wirt: ${f.title} (−${f.value})`);
+  const pm=prev.menu||{}; if (!iAmWirt()) for (const [id,it] of Object.entries(cur.menu||{})) if (!pm[id]) toast(`Neu auf der Karte: ${it.name}`);
+}
+
+/* ---------- Wartung: alte Wochen falten, Erinnerungen planen ---------- */
+let maintBusy=false;
+async function maintenance(){
+  if (maintBusy || !S.ready.cafe || !S.ready.weeks || !memberOf(S.me)) return;
+  const key="oc_maint_"+S.cafe; if (Date.now()-(+(store.get(key)||0)) < 6*3600e3) return;
+  maintBusy=true; store.set(key,String(Date.now()));
+  try{ await foldOldWeeks(); await scheduleReminders() }catch(e){ console.error(e); store.del(key) } finally{ maintBusy=false }
+}
+// Wochen, die älter als FOLD_WEEKS sind und nichts Offenes mehr enthalten, in den Übertrag falten
+async function foldOldWeeks(){
+  const cutoff=weekStart(Date.now()) - FOLD_WEEKS*7*864e5;
+  for (const [wk,wd] of Object.entries(S.weeks)){
+    if (!(wd.start < cutoff)) continue;
+    if (Object.values(wd.orders||{}).some(o=>o.status==="open")) continue;
+    await runTransaction(fs, async tx => {
+      const ws=await tx.get(weekRef(wk)); if (!ws.exists() || ws.data().folded) return;
+      const d=ws.data(), delta={};
+      for (const o of Object.values(d.orders||{})) if (o.status==="served") delta[o.by]=(delta[o.by]||0)+(o.points||0);
+      for (const p of Object.values(d.payments||{})) if (p.status==="paid") delta[p.by]=(delta[p.by]||0)-(p.value||0);
+      const patch={}; for (const [uid,v] of Object.entries(delta)) if (v) patch["carry."+uid]=increment(v);
+      if (Object.keys(patch).length) tx.update(cafeRef(), patch);
+      tx.update(weekRef(wk), {folded:true});
+    });
+  }
+}
+// Wiederkehrende Specials: ntfy-Nachricht bis zu ~3 Tage im Voraus planen (ntfy erlaubt max. 3 Tage)
+async function scheduleReminders(){
+  const sps=Object.entries(info().specials||{}).filter(([,s])=>s.kind==="weekly");
+  for (const [id,s] of sps){
+    for (let d=0; d<3; d++){
+      const day=new Date(); day.setDate(day.getDate()+d); if (day.getDay()!==Number(s.weekday)) continue;
+      const [hh,mm]=(s.remindAt||"09:00").split(":").map(Number); day.setHours(hh,mm,0,0);
+      const at=day.getTime(); if (at < Date.now()+60e3 || at > Date.now()+70*3600e3) continue;
+      const dk=day.toISOString().slice(0,10);
+      // Per Transaktion markieren, damit nicht zwei Handys dieselbe Erinnerung planen
+      const mine = await runTransaction(fs, async tx => { const c=await tx.get(cafeRef()); const r=((c.data().specials||{})[id]||{}).reminded||{};
+        if (r[dk]) return false; tx.update(cafeRef(), {[`specials.${id}.reminded.${dk}`]:true}); return true });
+      if (!mine) continue;
+      for (const m of members()) if (wants(m,"reminder")) sendNtfy(m.ntfy, `Heute: ${s.title}`, `Im ${info().name||"Café Otterliebe"} gibt es heute ${s.title} für ${s.points} Punkte.`, at).catch(()=>{});
+    }
+  }
+}
+
+/* ---------- Aktionen ---------- */
+function writeOrder(o){ const wk=weekKey(o.at), id=newId();
+  w(setDoc(weekRef(wk), {week:wk, start:weekStart(o.at), folded:false, orders:{[id]:o}}, {merge:true})); return {id,wk} }
+function setOrder(o, patch){ const p={}; for (const [k,v] of Object.entries(patch)) p[`orders.${o.id}.${k}`]=v; w(updateDoc(weekRef(o.wk), p)) }
+let orderDraft=null;
+function openOrder(kind, id){
+  const src = kind==="special" ? (info().specials||{})[id] : (info().menu||{})[id]; if(!src) return;
+  orderDraft = {kind, id, name: src.name||src.title, points: src.points};
+  $("orderHead").textContent = orderDraft.name; $("orderSub").textContent = `${pts(orderDraft.points)} · kommt auf deinen Deckel, sobald serviert`;
+  $("orderNote").value=""; document.querySelector('input[name=orderWhen][value=now]').checked=true; $("orderAt").hidden=true;
+  const t=new Date(); t.setDate(t.getDate()+1); t.setHours(9,0,0,0); $("orderAt").value=localInput(t.getTime()); $("orderAt").min=localInput(Date.now());
+  $("orderOverlay").hidden=false }
+$("orderForm").addEventListener("change", e => { if (e.target.name==="orderWhen") $("orderAt").hidden = e.target.value!=="later" });
+$("orderForm").addEventListener("submit", e => { e.preventDefault(); if(!orderDraft) return;
+  const later=document.querySelector('input[name=orderWhen]:checked').value==="later";
+  const forAt = later ? new Date($("orderAt").value).getTime() : null;
+  if (later && !(forAt>Date.now())){ toast("Bitte einen Zeitpunkt in der Zukunft wählen."); return }
+  const o={by:S.me, name:orderDraft.name, points:orderDraft.points, itemId:orderDraft.kind==="item"?orderDraft.id:null, special:orderDraft.kind==="special"?orderDraft.id:null,
+           note:$("orderNote").value.trim()||null, at:Date.now(), forAt, status:"open"};
+  const ref=writeOrder(o); $("orderOverlay").hidden=true;
+  push(wirte(), "order", later?"Neue Vorbestellung":"Neue Bestellung", `${myName()} bestellt ${o.name}${o.note?` (${o.note})`:""}${later?` für ${when(forAt)}`:""}.`);
+  toast(later?`Vorbestellt für ${when(forAt)}.`:`Bestellt: ${o.name}. Der Wirt ist dran.`, ()=>setOrder({...ref}, {status:"cancelled"})) });
+const myName = () => nameOf(S.me);
+const findOrder = id => allOrders().find(o=>o.id===id);
+
+function serve(id){ const o=findOrder(id); if(!o||!iAmWirt()) return;
+  const before=deckel(o.by), lim=limitPts();
+  setOrder(o, {status:"served", servedAt:Date.now(), servedBy:S.me});
+  push([o.by], "served", "Serviert", `${o.name} ist fertig. Lass es dir schmecken!`);
+  if (before < lim && before+o.points >= lim){ push([o.by, ...wirte()], "limit", "Rechnung fällig", `Der Deckel von ${nameOf(o.by)} hat ${lim} Punkte erreicht.`) }
+  toast(`${o.name} serviert.`) }
+
+document.addEventListener("click", ev => {
+  const tb=ev.target.closest("[data-tab]"); if(tb){ setTab(tb.dataset.tab); return }
+  const b=ev.target.closest("[data-act]"); if(!b) return;
+  if (b.dataset.confirm && !b.classList.contains("armed")){ const old=b.textContent; b.classList.add("armed"); b.textContent=b.dataset.confirm;
+    setTimeout(()=>{ b.classList.remove("armed"); b.textContent=old },3000); return }
+  b.classList.remove("armed");
+  const {act,id,v}=b.dataset; const wirt=iAmWirt();
+  switch(act){
+    case "order": openOrder(b.dataset.kind, id); break;
+    case "serve": serve(id); break;
+    case "decline": { const o=findOrder(id); if(o&&wirt){ setOrder(o,{status:"declined"}); push([o.by],"served","Leider nicht",`${o.name} kann gerade nicht serviert werden.`); toast("Abgelehnt.") } break }
+    case "cancel": { const o=findOrder(id); if(o&&o.by===S.me&&o.status==="open"){ setOrder(o,{status:"cancelled"}); push(wirte(),"order","Storniert",`${myName()} hat ${o.name} storniert.`); toast("Storniert.") } break }
+    case "vote": { const r=((info().ratings||{})[id]||{})[S.me]; const val=Number(v);
+      upd({[`ratings.${id}.${S.me}`]: r===val ? deleteField() : val}); break }
+    case "itemEdit": { const it=(info().menu||{})[id]; if(!it||!wirt) return; edit={id}; $("ieName").value=it.name; $("iePts").value=it.points; $("ieCat").value=it.cat||""; $("itemOverlay").hidden=false; break }
+    case "itemDelete": if(edit&&wirt){ upd({[`menu.${edit.id}`]:deleteField(), [`ratings.${edit.id}`]:deleteField()}); closeSheets(); toast("Von der Karte genommen.") } break;
+    case "spDelete": if(wirt){ upd({[`specials.${id}`]:deleteField()}); toast("Special entfernt.") } break;
+    case "wishStatus": if(wirt){ const x=(info().wishes||{})[id]; upd({[`wishes.${id}.status`]:v}); if(x) push([x.by],"confirm","Wunsch-Brett",`Dein Wunsch „${x.text}“: ${v==="done"?"erfüllt!":"leider nicht."}`) } break;
+    case "wishDelete": upd({[`wishes.${id}`]:deleteField()}); break;
+    case "wishToMenu": if(wirt){ const x=(info().wishes||{})[id]; if(!x) return; $("itemName").value=x.text.slice(0,40); $("itemPts").focus(); upd({[`wishes.${id}.status`]:"done"});
+      push([x.by],"confirm","Wunsch-Brett",`Dein Wunsch „${x.text}“ kommt auf die Karte!`); $("wirtAddItem").scrollIntoView({behavior:"smooth",block:"center"}) } break;
+    case "favAnswer": if(!wirt){ const f=(info().favors||{})[id]; upd({[`favors.${id}.status`]:v}); if(f) push(wirte(),"confirm","Gefallen",`${myName()} hat „${f.title}“ ${v==="accepted"?"angenommen":"abgelehnt"}.`); toast(v==="accepted"?"Angenommen. Damit kannst du jetzt bezahlen.":"Abgelehnt.") } break;
+    case "favDelete": if(wirt){ upd({[`favors.${id}`]:deleteField()}); toast("Entfernt.") } break;
+    case "pay": { const f=(info().favors||{})[id]; if(!f||f.status!=="accepted") return; const at=Date.now(), wk=weekKey(at), pid=newId();
+      w(setDoc(weekRef(wk), {week:wk, start:weekStart(at), folded:false, payments:{[pid]:{by:S.me, favorId:id, title:f.title, value:f.value, at, status:"paid"}}}, {merge:true}));
+      push(wirte(),"confirm","Rechnung beglichen",`${myName()} bezahlt mit „${f.title}“ (−${f.value}).`);
+      toast(`Bezahlt mit ${f.title}. Danke!`, ()=>w(updateDoc(weekRef(wk),{[`payments.${pid}.status`]:"undone"}))); break }
+    case "payUndo": w(updateDoc(weekRef(b.dataset.wk),{[`payments.${id}.status`]:"undone"})); toast("Zurückgenommen."); break;
+    case "reviewMonth": reviewMonth=Number(v); renderReview(); break;
+    case "manage": openMemberId=id; $("memberOverlay").hidden=false; renderMemberSheet(); break;
+    case "resetPw": if(wirt&&id!==S.me){ upd({[`members.${id}.pwHash`]:null}); toast(`Passwort von ${nameOf(id)} zurückgesetzt.`) } break;
+    case "removeMember": if(wirt&&id!==S.me){ upd({[`members.${id}`]:deleteField()}); closeSheets(); toast("Aus dem Café entfernt.") } break;
+    case "profile": if(memberOf(S.me)){ $("profileOverlay").hidden=false; renderProfile() } break;
+    case "pickIcon": upd({[`members.${S.me}.icon`]:v||null}); break;
+    case "pickColor": upd({[`members.${S.me}.color`]:v}); break;
+    case "rename": closeSheets(); $("renameName").value=myName(); $("renameOverlay").hidden=false; $("renameName").focus(); break;
+    case "changePw": closeSheets(); openLogin("change", S.me); break;
+    case "pushOn": upd({[`members.${S.me}.ntfy`]:"oc-"+rnd(20,LOW)}); toast("Push eingerichtet. Folge jetzt den Schritten."); break;
+    case "pushOff": upd({[`members.${S.me}.ntfy`]:null}); break;
+    case "pushTest": { const m=memberOf(S.me); if(m&&m.ntfy) sendNtfy(m.ntfy,"Café Otterliebe","Der Otter klopft an. Push funktioniert!").then(r=>toast(r.ok?"Test gesendet.":"Senden hat nicht geklappt."),()=>toast("Senden hat nicht geklappt.")); break }
+    case "copyTopic": { const m=memberOf(S.me); if(m&&navigator.clipboard) navigator.clipboard.writeText(m.ntfy).then(()=>toast("Thema kopiert."),()=>toast("Bitte markieren und kopieren.")); break }
+    case "copyInvite": { const url=inviteUrl();
+      if (navigator.share) navigator.share({title:"Café Otterliebe",text:`Komm ins Café! Code: ${fmtCode(S.cafe)}`,url}).catch(()=>{});
+      else if (navigator.clipboard) navigator.clipboard.writeText(url).then(()=>toast("Link kopiert."),()=>toast("Bitte den Link markieren und kopieren."));
+      break }
+    case "privacy": $("privacyOverlay").hidden=false; $("privacyOverlay").querySelector(".sheet").scrollTop=0; break;
+    case "closeSheets": closeSheets(); break;
+    case "iam": iAm(id); break;
+    case "loginCancel": closeLogin(); break;
+    case "showCreate": $("createForm").hidden=false; $("showCreate").hidden=true; $("createPw").focus(); break;
+    case "leave": { const c=S.cafe; if(c) store.del("oc_member_"+c); enterCafe(null); break }
+    case "reload": location.reload(); break;
+  }
+});
+document.addEventListener("change", ev => { const t=ev.target;
+  if (t.dataset.pref){ upd({[`members.${S.me}.notify.${t.dataset.pref}`]: t.checked}); return }
+  if (t.dataset.role && iAmWirt()){ if(!t.checked && wirte().length<=1){ t.checked=true; toast("Ein Café braucht mindestens einen Wirt."); return }
+    upd({[`members.${t.dataset.role}.role`]: t.checked?"wirt":"gast"}); toast(t.checked?`${nameOf(t.dataset.role)} steht jetzt mit hinter der Theke.`:`${nameOf(t.dataset.role)} ist jetzt Gast.`) }
+  if (t.name==="spKind"){ const wk=t.value==="weekly"; $("spWeekly").hidden=!wk; $("spWeeklyHint").hidden=!wk; $("spOnce").hidden=wk }
+});
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeSheets() });
+
+/* ---------- Formulare des Wirts ---------- */
+$("itemForm").addEventListener("submit", e => { e.preventDefault(); if(!iAmWirt()) return;
+  const name=$("itemName").value.trim(), points=Math.round(+$("itemPts").value), cat=$("itemCat").value.trim()||"Sonstiges";
+  if(!name||!(points>0)) return; const id=newId();
+  upd({[`menu.${id}`]:{name,points,cat,createdAt:Date.now()}});
+  push(others(),"newItem","Neu auf der Karte",`${name} für ${pts(points)}.`);
+  $("itemName").value=""; $("itemPts").value=""; toast(`${name} steht jetzt auf der Karte.`) });
+$("itemEditForm").addEventListener("submit", e => { e.preventDefault(); if(!edit||!iAmWirt()) return;
+  const name=$("ieName").value.trim(), points=Math.round(+$("iePts").value), cat=$("ieCat").value.trim()||"Sonstiges"; if(!name||!(points>0)) return;
+  upd({[`menu.${edit.id}.name`]:name,[`menu.${edit.id}.points`]:points,[`menu.${edit.id}.cat`]:cat}); closeSheets(); toast("Gespeichert.") });
+$("specialForm").addEventListener("submit", e => { e.preventDefault(); if(!iAmWirt()) return;
+  const title=$("spTitle").value.trim(), points=Math.round(+$("spPts").value), kind=document.querySelector('input[name=spKind]:checked').value;
+  if(!title||!(points>0)) return; const s={title, points, kind, note:$("spNote").value.trim()||null, createdAt:Date.now()};
+  if (kind==="once"){ const until=new Date($("spUntil").value).getTime(); if(!(until>Date.now())){ toast("Bitte ein Ende in der Zukunft wählen."); return } s.until=until }
+  else { s.weekday=Number($("spDay").value); s.remindAt=$("spRemind").value||"09:00"; s.reminded={} }
+  const id=newId(); upd({[`specials.${id}`]:s});
+  push(others(),"newSpecial","Neues Special",`${title} für ${pts(points)}${kind==="weekly"?` – jeden ${DAYS[s.weekday]}`:` – nur bis ${when(s.until)}`}.`);
+  $("spTitle").value=""; $("spPts").value=""; $("spNote").value=""; store.del("oc_maint_"+S.cafe); setTimeout(maintenance,1500); toast("Special angelegt.") });
+$("favorForm").addEventListener("submit", e => { e.preventDefault(); if(!iAmWirt()) return;
+  const title=$("favTitle").value.trim(), value=Math.round(+$("favValue").value); if(!title||!(value>0)) return;
+  upd({[`favors.${newId()}`]:{title,value,status:"offered",createdAt:Date.now()}});
+  push(gaeste(),"confirm","Neues Angebot",`Der Wirt bietet an: „${title}“ begleicht ${pts(value)}. Bitte bestätigen.`);
+  $("favTitle").value=""; $("favValue").value=""; toast("Angeboten. Der Gast muss noch bestätigen.") });
+$("wishForm").addEventListener("submit", e => { e.preventDefault(); const text=$("wishText").value.trim(); if(!text) return;
+  upd({[`wishes.${newId()}`]:{text,by:S.me,at:Date.now(),status:"open"}}); push(wirte(),"confirm","Wunsch-Brett",`${myName()} wünscht sich: ${text}`);
+  $("wishText").value=""; toast("Angeheftet.") });
+$("nameForm").addEventListener("submit", e => { e.preventDefault(); if(!iAmWirt()) return; upd({name:$("cafeNameInput").value.trim()||"Café Otterliebe"}); $("cafeNameInput").blur(); toast("Gespeichert.") });
+$("limitForm").addEventListener("submit", e => { e.preventDefault(); if(!iAmWirt()) return; const l=Math.round(+$("limitInput").value); if(!(l>0)) return; upd({limit:l}); $("limitInput").blur(); toast(`Grenze steht jetzt bei ${l} Punkten.`) });
+$("renameForm").addEventListener("submit", e => { e.preventDefault(); const n=$("renameName").value.trim(); if(!n) return; upd({[`members.${S.me}.name`]:n}); closeSheets() });
+
+/* ---------- Anmelden, Gründen, Beitreten ---------- */
+function setMe(id){ S.me=id; store.set("oc_member_"+S.cafe,id); route() }
+function openLogin(mode, id, forced=false){ const m=memberOf(id); if(!m) return; login={mode,id,forced};
+  $("loginHead").textContent = mode==="login"?`Anmelden als ${m.name}`:mode==="change"?"Passwort ändern":"Lege dein Passwort fest";
+  $("loginHint").textContent = mode==="login"?"Gib dein persönliches Passwort ein.":mode==="change"?"Erst das aktuelle, dann das neue Passwort.":"Damit meldest du dich künftig an. Mindestens 4 Zeichen.";
+  $("loginOld").hidden = mode!=="change"; $("loginPw2").hidden = mode==="login"; $("loginPw").placeholder = mode==="login"?"Passwort":"Neues Passwort";
+  $("loginSubmit").textContent = mode==="login"?"Anmelden":"Speichern"; $("loginCancel").hidden=forced;
+  for (const f of ["loginOld","loginPw","loginPw2"]) $(f).value=""; $("loginOverlay").hidden=false; setTimeout(()=>$(mode==="change"?"loginOld":"loginPw").focus(),50) }
+function closeLogin(){ login=null; $("loginOverlay").hidden=true }
+$("loginForm").addEventListener("submit", async e => { e.preventDefault(); if(!login) return; const L=login, m=memberOf(L.id); if(!m){ closeLogin(); return }
+  const p1=$("loginPw").value, p2=$("loginPw2").value;
+  if (L.mode==="login"){ if (await pwHash(p1,S.cafe,m.id)!==m.pwHash){ toast("Das Passwort stimmt nicht."); return } closeLogin(); setMe(m.id); toast(`Willkommen zurück, ${m.name}!`); return }
+  if (L.mode==="change" && await pwHash($("loginOld").value,S.cafe,m.id)!==m.pwHash){ toast("Das aktuelle Passwort stimmt nicht."); return }
+  if (p1.length<4){ toast("Mindestens 4 Zeichen, bitte."); return } if (p1!==p2){ toast("Die beiden Passwörter sind nicht gleich."); return }
+  upd({[`members.${m.id}.pwHash`]: await pwHash(p1,S.cafe,m.id)}); closeLogin(); if(S.me!==m.id) setMe(m.id); toast("Passwort gespeichert.") });
+function iAm(id){ const m=memberOf(id); if(!m) return; openLogin(m.pwHash?"login":"set", id) }
+$("createForm").addEventListener("submit", async e => { e.preventDefault();
+  const pw=$("createPw").value, name=$("createName").value.trim(), myPw=$("createMyPw").value; if(!pw||!name) return;
+  if (myPw.length<4){ toast("Dein Passwort braucht mindestens 4 Zeichen."); return }
+  const btn=e.submitter; if(btn) btn.disabled=true;
+  try{ const code=rnd(8), mid=newId();
+    await timeout(setDoc(doc(fs,"cafes",code), {createdAt:Date.now(), pw}));
+    const h=await pwHash(myPw,code,mid);
+    await timeout(setDoc(doc(fs,"cafes",code,"data","cafe"), {name:"Café Otterliebe", limit:100, createdAt:Date.now(),
+      members:{[mid]:{name, role:"wirt", pwHash:h, joinedAt:Date.now()}}, menu:{}, specials:{}, favors:{}, wishes:{}, ratings:{}, carry:{}}));
+    $("createPw").value=""; $("createMyPw").value=""; store.set("oc_member_"+code, mid); enterCafe(code); setTab("cafe");
+    toast("Das Café ist eröffnet. Lade jetzt deinen ersten Gast ein.");
+  }catch(err){ console.error(err); toast(err.code==="permission-denied"?"Das Gründungs-Passwort stimmt nicht.":"Eröffnen hat nicht geklappt. Bist du online?") }
+  finally{ if(btn) btn.disabled=false } });
+$("joinForm").addEventListener("submit", async e => { e.preventDefault(); const code=normCode($("joinCode").value);
+  if (code.length!==8){ toast("Der Code hat 8 Zeichen, z. B. ABCD-EF23."); return }
+  try{ const s=await timeout(getDoc(doc(fs,"cafes",code,"data","cafe"))); if(!s.exists()) throw {code:"permission-denied"}; enterCafe(code) }
+  catch(err){ console.error(err); toast(err.code==="permission-denied"?"Dieses Café gibt es nicht. Prüfe den Code.":"Beitreten hat nicht geklappt. Bist du online?") } });
+$("whoNewForm").addEventListener("submit", async e => { e.preventDefault();
+  const name=$("whoName").value.trim(), p1=$("whoPw").value, p2=$("whoPw2").value; if(!name) return;
+  if (p1.length<4){ toast("Dein Passwort braucht mindestens 4 Zeichen."); return } if (p1!==p2){ toast("Die beiden Passwörter sind nicht gleich."); return }
+  const mid=newId(), h=await pwHash(p1,S.cafe,mid);
+  upd({[`members.${mid}`]:{name, role:"gast", pwHash:h, joinedAt:Date.now()}});
+  push(wirte(),"confirm","Neuer Gast",`${name} hat Platz genommen.`);
+  $("whoName").value=""; $("whoPw").value=""; $("whoPw2").value=""; setMe(mid); setTab("karte") });
+
+/* ---------- Aktuell bleiben ---------- */
+let hiddenAt=0, lastResync=0;
+function resync(){ const n=Date.now(); if(!S.cafe||n-lastResync<3000) return; lastResync=n; subscribe(); checkVersion() }
+document.addEventListener("visibilitychange", () => { if (document.hidden){ hiddenAt=Date.now(); return } if (Date.now()-hiddenAt>60000) resync() });
+window.addEventListener("online", resync);
+window.addEventListener("pageshow", e => { if (e.persisted) resync() });
+let baseVersion=null;
+async function checkVersion(){ try{ const t=await fetch("index.html?v="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.text():null); if(!t) return;
+  const h=await sha(t); if(!baseVersion){ baseVersion=h; return } if(h!==baseVersion) $("updateBar").hidden=false }catch(e){} }
+
+/* ---------- Start ---------- */
+function boot(){
+  const t=store.get("oc_tab"); if(t) setTab(t);
+  checkVersion(); setInterval(()=>{ if(!document.hidden) checkVersion() }, 10*60e3);
+  if (!firebaseConfig || !firebaseConfig.apiKey || String(firebaseConfig.apiKey).includes("HIER")){ showStatus("Firebase ist noch nicht eingerichtet (config.js)."); return }
+  const app=initializeApp(firebaseConfig);
+  fs=initializeFirestore(app,{localCache:memoryLocalCache()});
+  const auth=getAuth(app); showStatus("Der Otter schließt auf …"); let started=false;
+  onAuthStateChanged(auth, u => {
+    if (!u){ signInAnonymously(auth).catch(e=>{ console.error(e); showStatus(e.code==="auth/operation-not-allowed"?"Die anonyme Anmeldung ist in Firebase nicht aktiviert.":"Keine Verbindung. Bist du online?") }); return }
+    showStatus(""); if(started) return; started=true;
+    const urlCode=normCode(new URLSearchParams(location.search).get("c")), saved=store.get("oc_cafe");
+    if (urlCode && urlCode.length===8 && urlCode!==saved){ $("joinCode").value=fmtCode(urlCode); enterCafe(null); toast("Tippe auf „Beitreten“, um ins Café zu kommen.") }
+    else enterCafe(saved);
+  });
+}
+boot();
+</script>
+</body>
+</html>
