@@ -52,6 +52,9 @@ button{cursor:pointer}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
 /* Kopf */
+.sign{border:2px solid var(--ok);color:var(--ok);background:var(--surface);border-radius:999px;padding:6px 14px;font-weight:700;font-size:14px;align-self:flex-start;display:flex;align-items:center;gap:8px}
+.sign::before{content:"";width:10px;height:10px;border-radius:50%;background:currentColor}
+.sign.closed{border-color:var(--muted);color:var(--muted)}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
 .brand .ot{width:44px;height:44px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;flex:none;overflow:hidden}
@@ -232,6 +235,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent)}
 
   <!-- APP -->
   <div id="screenApp" class="stack" hidden>
+  <button class="sign" id="openSign" data-act="toggleOpen" hidden></button>
     <!-- KARTE -->
     <div data-view="karte" class="view stack">
       <div id="specials" class="stack" style="gap:10px"></div>
@@ -623,11 +627,22 @@ function renderWho(){
 }
 
 /* ---------- Anzeige ---------- */
+// Schild "Geöffnet / Geschlossen" oben in der App
+function renderSign(wirt){
+  const sign = $("openSign");               // den Knopf über seine id holen
+  const offen = info().open !== false;      // noch nie gesetzt? Dann gilt: geöffnet
+  sign.hidden = false;                      // sichtbar machen
+  sign.textContent = offen ? "Geöffnet" : "Geschlossen";
+  sign.classList.toggle("closed", !offen);  // graue Variante an oder aus
+  sign.disabled = !wirt;                    // nur der Wirt darf tippen
+}
+
 function render(){
   const wirt=iAmWirt(), me=memberOf(S.me);
   $("meChip").innerHTML = `${av(S.me)}<span>${esc(me.name)}</span>`;
   $("roleLine").textContent = wirt ? "Du stehst hinter der Theke" : "Du bist zu Gast";
   renderKarte(wirt); renderOrders(wirt); renderDeckel(wirt); renderCafe(wirt);
+renderSign(wirt);
 }
 
 function renderKarte(wirt){
@@ -663,7 +678,7 @@ function renderKarte(wirt){
   $("wishes").innerHTML = ws.length ? ws.map(x=>`<div class="row">${av(x.by)}<span class="main"><span class="t">${esc(x.text)}</span><span class="s">${esc(nameOf(x.by))} · ${when(x.at)}</span></span>
       <span class="pill ${st[x.status||"open"][1]}">${st[x.status||"open"][0]}</span>
       <span class="actions">${wirt&&x.status==="open"?`<button class="btn sm" data-act="wishToMenu" data-id="${x.id}">Auf die Karte</button><button class="btn sm" data-act="wishStatus" data-v="done" data-id="${x.id}">Erfüllt</button><button class="btn sm ghost" data-act="wishStatus" data-v="declined" data-id="${x.id}">Leider nicht</button>`:""}
-      ${x.by===S.me||wirt?`<button class="btn sm ghost danger" data-act="wishDelete" data-id="${x.id}" data-confirm="Abnehmen?">Abnehmen</button>`:""}</span></div>`).join("")
+      ${x.by===S.me||wirt?`<button class="btn sm ghost danger" data-act="wishDelete" data-id="${x.id}" data-confirm="Ablehnen?">Ablehnen</button>`:""}</span></div>`).join("")
     : `<div class="empty">Noch keine Wünsche angeheftet.</div>`;
 }
 
@@ -997,6 +1012,13 @@ document.addEventListener("click", ev => {
     case "switchCafe": if(id!==S.cafe){ enterCafe(id); setTab("karte"); toast(`${cafeLabel(id)} geöffnet.`) } break;
     case "addCafe": enterCafe(null); window.scrollTo(0,0); break;
     case "cafeRename": openCafeRename(); break;
+    case "toggleOpen": {
+      if (!wirt) break;
+      const offen = info().open !== false;
+      upd({open: !offen});
+      toast(offen ? "Schild umgedreht: Geschlossen." : "Schild umgedreht: Geöffnet!");
+      break;
+    }
     case "cafeNameTap": if(S.cafe && iAmWirt()) openCafeRename(); else if (S.cafe) setTab("cafe"); break;
     case "reload": location.reload(); break;
   }
